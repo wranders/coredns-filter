@@ -115,3 +115,57 @@ filter {
     update 0
 }
 ```
+
+## Buliding
+
+Clone the [coredns](https://github.com/coredns/coredns) repository and change
+into it's directory.
+
+```sh
+git clone https://github.com/coredns/coredns.git
+```
+
+```sh
+cd coredns
+```
+
+Fetch the plugin and add it to `coredns`'s `go.mod` file:
+
+```sh
+go get -u github.com/wranders/coredns-filter
+```
+
+Update `plugin.cfg` in the root of the directory. The `filter` declaration
+should be inserted before `cache` so that updates to the `filter` are applied
+immediately.
+
+```sh
+# Using sed
+sed '/^cache:cache/i filter:github.com/wranders/coredns-filter' plugin.cfg
+```
+
+```powershell
+# Using Powershell
+(Get-Content plugin.cfg).`
+Replace("cache:cache", "filter:github.com/wranders/coredns-filter`ncache:cache")
+```
+
+Generate the plugin files:
+
+```sh
+go generate
+```
+
+And build:
+
+```sh
+go build
+```
+
+The `coredns` binary will be in the root of the project directory, unless
+otherwise specified by the `-o` flag.
+
+## License
+
+This plugin is licensed under the MIT license. See [LICENSE](./LICENSE) for more
+information.
