@@ -1,0 +1,14 @@
+# This is a comment
+! This is a comment
+; This is a comment
+
+example.com
+*.ex[ample.com
+.*.example.com
+||example.com^
+address=/example.com/#
+example.net
+*.example.net
+.*.example.net
+||example.net^
+address=/example.net/#

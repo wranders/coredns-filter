@@ -1,0 +1,71 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Go Coverage",
+            "type": "shell",
+            "command": "go test -coverprofile='coverage.out'",
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": ".*"
+                }
+            }
+        },
+        {
+            "label": "Go View Coverage",
+            "type": "shell",
+            "command": "go tool cover -html='coverage.out'",
+            "dependsOn": "Go Coverage",
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": ".*"
+                }
+            }
+        },
+        {
+            "label": "Run Go Pkgsite",
+            "type": "shell",
+            "command": "pkgsite -list=false",
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": ".*"
+                }
+            }
+        },
+        {
+            "label": "Run Sonar-Scanner",
+            "type": "shell",
+            "command": [
+                "sonar-scanner.bat",
+                "-D'sonar.projectKey=coredns-filter'",
+                "-D'sonar.sources=.'",
+                "-D'sonar.exclusions=**/*_test.go,.testdata/*'",
+                "-D'sonar.tests=.'",
+                "-D'sonar.test.inclusions=**/*_test.go'",
+                "-D'sonar.go.coverage.reportPaths=coverage.out'",
+                "-D'sonar.host.url=${input:sonarqubeUrl}'",
+                "-D'sonar.login=${input:sonarqubeToken}'"
+            ],
+            "dependsOn": "Go Coverage",
+            "problemMatcher": {
+                "pattern": {
+                    "regexp": ".*"
+                }
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "type": "promptString",
+            "id": "sonarqubeUrl",
+            "description": "SonarQube URL",
+            "default": "http://wsl.local:9000"
+        },
+        {
+            "type": "promptString",
+            "id": "sonarqubeToken",
+            "description": "Login token",
+            "password": true
+        }
+    ]
+}
