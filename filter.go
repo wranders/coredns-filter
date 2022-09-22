@@ -131,8 +131,8 @@ func (f *Filter) OnShutdown() error {
 	return nil
 }
 
-// Build the radix trees and regular expression lists used to determine how
-// domains are handled
+// Build the domain and regular expression lists used to determine how domains
+// are handled
 func (f *Filter) Build() {
 	allowDomains := f.allowConfig.BuildDomains()
 	allowRegex := f.allowConfig.BuildRegExps()

@@ -39,7 +39,7 @@ func GetListLoadFunc(uri string) (ListLoadFunc, error) {
 	}
 }
 
-// LoadFile fetches the contents of a local file
+// LoadFile implements ListLoadFunc. Fetches the contents of a local file
 func LoadFile(path string) (io.ReadCloser, error) {
 	trimmedPath := strings.TrimPrefix(path, "file://")
 	file, err := os.Open(trimmedPath)
@@ -49,7 +49,8 @@ func LoadFile(path string) (io.ReadCloser, error) {
 	return file, nil
 }
 
-// LoadHttp fetches the contents of a remote file over HTTP/S
+// LoadHttp implements ListLoadFunc. Fetches the contents of a remote file over
+// HTTP/S
 func LoadHttp(path string) (io.ReadCloser, error) {
 	resp, err := http.Get(path)
 	if err != nil {
