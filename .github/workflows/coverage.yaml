@@ -1,0 +1,36 @@
+name: Build and Test
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    types:
+    - opened
+    - synchronize
+    - reopened
+jobs:
+  build-test-publish_coverage:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-go@v3
+      with:
+        go-version: 1.19
+    - run: go build
+    - run: go test -coverprofile='coverage.out'
+    - uses: sonarsource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      with:
+        args: >
+          -Dsonar.organization=wranders
+          -Dsonar.projectKey=wranders_coredns-filter
+          -Dsonar.go.coverage.reportPaths=coverage.out
+          -Dsonar.verbose=true
+          -Dsonar.sources=.
+          -Dsonar.exclusions=**/*_test.go,.testdata/*
+          -Dsonar.tests=.
+          -Dsonar.test.inclusions=**/*_test.go
