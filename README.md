@@ -142,13 +142,14 @@ immediately.
 
 ```sh
 # Using sed
-sed '/^cache:cache/i filter:github.com/wranders/coredns-filter' plugin.cfg
+sed -i '/^cache:cache/i filter:github.com/wranders/coredns-filter' plugin.cfg
 ```
 
 ```powershell
 # Using Powershell
 (Get-Content plugin.cfg).`
-Replace("cache:cache", "filter:github.com/wranders/coredns-filter`ncache:cache")
+Replace("cache:cache", "filter:github.com/wranders/coredns-filter`ncache:cache") | `
+Set-Content -Path plugin.cfg
 ```
 
 Generate the plugin files:
