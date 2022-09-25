@@ -1,6 +1,8 @@
 package filter
 
 import (
+	"errors"
+	"strings"
 	"testing"
 
 	"github.com/coredns/caddy"
@@ -782,4 +784,78 @@ func TestUpdate(t *testing.T) {
 	}
 
 	RunSetupTests(t, tests)
+}
+
+func TestParserEOLError(t *testing.T) {
+	tests := []struct {
+		Name     string
+		Corefile string
+	}{
+		{
+			"allow domain extra token",
+			`filter {
+				allow domain google.com noop
+			}`,
+		},
+		{
+			"allow regex extra token",
+			`filter {
+				allow regex .* noop
+			}`,
+		},
+		{
+			"allow wildcard extra token",
+			`filter {
+				allow wildcard google.com noop
+			}`,
+		},
+		{
+			"allow list domain extra token",
+			`filter {
+				allow list domain file://domain.list noop
+			}`,
+		},
+		{
+			"allow list regex extra token",
+			`filter {
+				allow list regex file://domain.list noop
+			}`,
+		},
+		{
+			"allow list wildcard extra token",
+			`filter {
+				allow list regex file://domain.list noop
+			}`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			controller := caddy.NewTestController("dns", test.Corefile)
+			err := setup(controller)
+			t.Logf("%s", err)
+			var acceptErr errorExpectedEOL
+			if !errors.As(err, &acceptErr) {
+				t.Errorf(
+					"expected eol error type; got %T",
+					err,
+				)
+			}
+		})
+	}
+}
+
+func TestParserEOLErrorText(t *testing.T) {
+	corefile := `filter {
+		allow domain google.com noop
+	}`
+	expected := `unexpected token(s): ["noop"]; expected end of line`
+	controller := caddy.NewTestController("dns", corefile)
+	err := setup(controller)
+	if err == nil {
+		t.Error("an error was expected and not emitted")
+	}
+	if strings.Compare(err.Error(), expected) != 0 {
+		t.Errorf("unexpected error text `%s`; expected `%s`", err, expected)
+	}
 }

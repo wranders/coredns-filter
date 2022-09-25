@@ -41,6 +41,13 @@ func setup(c *caddy.Controller) error {
 	return nil
 }
 
+func ensureEOL(c *caddy.Controller) error {
+	if remain := c.RemainingArgs(); len(remain) != 0 {
+		return errorExpectedEOL{data: remain}
+	}
+	return nil
+}
+
 // Parse the Corefile configuration
 func Parse(c *caddy.Controller, f *Filter) error {
 	c.Next()
@@ -119,7 +126,7 @@ func parseActionDomain(c *caddy.Controller, f *Filter, a ActionType) error {
 	case ActionTypeBlock:
 		f.blockConfig.AddDomain(c.Val())
 	}
-	return nil
+	return ensureEOL(c)
 }
 
 func parseActionRegex(c *caddy.Controller, f *Filter, a ActionType) error {
@@ -136,7 +143,7 @@ func parseActionRegex(c *caddy.Controller, f *Filter, a ActionType) error {
 			return err
 		}
 	}
-	return nil
+	return ensureEOL(c)
 }
 
 func parseActionWildcard(c *caddy.Controller, f *Filter, a ActionType) error {
@@ -153,7 +160,7 @@ func parseActionWildcard(c *caddy.Controller, f *Filter, a ActionType) error {
 			return err
 		}
 	}
-	return nil
+	return ensureEOL(c)
 }
 
 func parseActionList(c *caddy.Controller, f *Filter, a ActionType) error {
@@ -198,7 +205,7 @@ func parseActionListDomain(c *caddy.Controller, f *Filter, a ActionType) error {
 			return err
 		}
 	}
-	return nil
+	return ensureEOL(c)
 }
 
 func parseActionListRegex(c *caddy.Controller, f *Filter, a ActionType) error {
@@ -215,7 +222,7 @@ func parseActionListRegex(c *caddy.Controller, f *Filter, a ActionType) error {
 			return err
 		}
 	}
-	return nil
+	return ensureEOL(c)
 }
 
 func parseActionListWildcard(c *caddy.Controller, f *Filter, a ActionType) error {
@@ -232,7 +239,7 @@ func parseActionListWildcard(c *caddy.Controller, f *Filter, a ActionType) error
 			return err
 		}
 	}
-	return nil
+	return ensureEOL(c)
 }
 
 func parseResponse(c *caddy.Controller, f *Filter) error {
