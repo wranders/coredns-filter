@@ -352,6 +352,35 @@ func TestAllowList(t *testing.T) {
 			false,
 		},
 		{
+			"allow list hosts no url",
+			`filter {
+				allow list hosts
+			}`,
+			true,
+		},
+		{
+			"allow list hosts invalid url",
+			`filter {
+				allow list hosts "file://invalid url"
+			}`,
+			true,
+		},
+		{
+			"allow list hosts from file",
+			`filter {
+				allow list hosts file://.testdata/hosts.list
+			}`,
+			false,
+		},
+		{
+			"allow list hosts duplicate",
+			`filter {
+				allow list hosts file://.testdata/hosts.list
+				allow list hosts file://.testdata/hosts.list
+			}`,
+			false,
+		},
+		{
 			"allow list regex no url",
 			`filter {
 				allow list regex
@@ -497,6 +526,35 @@ func TestBlockList(t *testing.T) {
 			"block list domain https",
 			`filter {
 				block list domain https://dbl.oisd.nl/basic/
+			}`,
+			false,
+		},
+		{
+			"block list hosts no url",
+			`filter {
+				block list hosts
+			}`,
+			true,
+		},
+		{
+			"block list hosts invalid url",
+			`filter {
+				block list hosts "file://invalid url"
+			}`,
+			true,
+		},
+		{
+			"block list hosts from file",
+			`filter {
+				block list hosts file://.testdata/hosts.list
+			}`,
+			false,
+		},
+		{
+			"block list hosts duplicate",
+			`filter {
+				block list hosts file://.testdata/hosts.list
+				block list hosts file://.testdata/hosts.list
 			}`,
 			false,
 		},

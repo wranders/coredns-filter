@@ -172,6 +172,10 @@ func parseActionList(c *caddy.Controller, f *Filter, a ActionType) error {
 		if err := parseActionListDomain(c, f, a); err != nil {
 			return err
 		}
+	case "hosts":
+		if err := parseActionListHosts(c, f, a); err != nil {
+			return err
+		}
 	case "regex":
 		if err := parseActionListRegex(c, f, a); err != nil {
 			return err
@@ -202,6 +206,23 @@ func parseActionListDomain(c *caddy.Controller, f *Filter, a ActionType) error {
 		}
 	case ActionTypeBlock:
 		if err := f.blockConfig.AddDomainList(c.Val()); err != nil {
+			return err
+		}
+	}
+	return ensureEOL(c)
+}
+
+func parseActionListHosts(c *caddy.Controller, f *Filter, a ActionType) error {
+	if !c.NextArg() {
+		return c.Errf("no %s hosts list specified", a)
+	}
+	switch a {
+	case ActionTypeAllow:
+		if err := f.allowConfig.AddHostsList(c.Val()); err != nil {
+			return err
+		}
+	case ActionTypeBlock:
+		if err := f.blockConfig.AddHostsList(c.Val()); err != nil {
 			return err
 		}
 	}

@@ -9,6 +9,7 @@ func TestActionList404(t *testing.T) {
 		block list domain https://httpbin.org/status/404
 		block list regex https://httpbin.org/status/404
 		block list wildcard https://httpbin.org/noop
+		block list hosts https://httpbin.org/status/404
 	}`
 	filter := NewTestFilter(t, corefile)
 	filter.Build()
@@ -35,6 +36,20 @@ func TestActionListDomain(t *testing.T) {
 	// 		filter.blockTree.Len(),
 	// 	)
 	// }
+	if len(filter.blockDomains) != 2 {
+		t.Errorf(
+			"expected two domains; found %d",
+			len(filter.blockDomains),
+		)
+	}
+}
+
+func TestActionListHosts(t *testing.T) {
+	corefile := `filter {
+		block list hosts file://.testdata/hosts.list
+	}`
+	filter := NewTestFilter(t, corefile)
+	filter.Build()
 	if len(filter.blockDomains) != 2 {
 		t.Errorf(
 			"expected two domains; found %d",
