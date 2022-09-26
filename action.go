@@ -41,8 +41,11 @@ type ActionConfig struct {
 	regex      map[string]*regexp.Regexp
 
 	domainLists   ActionList
+	hostsLists    ActionList
 	regexLists    ActionList
 	wildcardLists ActionList
+
+	hostsRegexp *regexp.Regexp
 }
 
 // NewActionConfig returns an action ready to accept configurations
@@ -52,8 +55,10 @@ func NewActionConfig(action ActionType) ActionConfig {
 		domains:       make(map[string]bool),
 		regex:         make(map[string]*regexp.Regexp),
 		domainLists:   make(ActionList),
+		hostsLists:    make(ActionList),
 		regexLists:    make(ActionList),
 		wildcardLists: make(ActionList),
+		hostsRegexp:   regexp.MustCompile(`\s+|\t+`),
 	}
 }
 
@@ -72,6 +77,18 @@ func (a ActionConfig) AddDomainList(url string) error {
 			return err
 		}
 		a.domainLists[url] = loadFunc
+	}
+	return nil
+}
+
+// AddHostsList to match contents
+func (a ActionConfig) AddHostsList(url string) error {
+	if _, ok := a.hostsLists[url]; !ok {
+		loadFunc, err := GetListLoadFunc(url)
+		if err != nil {
+			return err
+		}
+		a.hostsLists[url] = loadFunc
 	}
 	return nil
 }
@@ -141,6 +158,13 @@ func (a ActionConfig) BuildDomains() map[string]bool {
 		domains[k] = true
 	}
 
+	a.buildDomainsLists(domains)
+	a.buildDomainHostsLists(domains)
+
+	return domains
+}
+
+func (a ActionConfig) buildDomainsLists(domains map[string]bool) {
 	for dom, load := range a.domainLists {
 		file, err := load(dom)
 		if err != nil {
@@ -163,15 +187,43 @@ func (a ActionConfig) BuildDomains() map[string]bool {
 			}
 			if bytes.Contains(line, []byte(" ")) {
 				// Skip formats that contain whitespace characters
-				// Host files should use the stock 'hosts' plugin
 				// Zone files should use the stock 'file' plugin
 				continue
 			}
 			domains[string(line)] = true
 		}
 	}
+}
 
-	return domains
+func (a ActionConfig) buildDomainHostsLists(domains map[string]bool) {
+	for dom, load := range a.hostsLists {
+		file, err := load(dom)
+		if err != nil {
+			log.Errorf(
+				"there was a problem fetching %s hosts list %q; %s",
+				a.configType,
+				dom,
+				err,
+			)
+			continue
+		}
+		defer file.Close()
+		scanner := bufio.NewScanner(file)
+		scanner.Split(bufio.ScanLines)
+		for scanner.Scan() {
+			line := scanner.Bytes()
+			line = bytes.TrimSpace(line)
+			if a.shouldSkip(line) {
+				continue
+			}
+			line = a.hostsRegexp.ReplaceAll(line, []byte(" "))
+			hostsLine := strings.Split(string(line), " ")
+			if len(hostsLine) != 2 {
+				continue
+			}
+			domains[hostsLine[1]] = true
+		}
+	}
 }
 
 // BuildRegExps consolidates individual regular expressions then loads and

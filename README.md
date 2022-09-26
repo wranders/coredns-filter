@@ -15,7 +15,6 @@ The *filter* plugin is used to block domain name resolution, simliar to
 ```nginx
 filter {
     ACTION TYPE DATA
-    ACTION list TYPE DATA
 }
 ```
 
@@ -29,8 +28,23 @@ filter {
     * Adblock Plus: `||example.com^`
     * DNSMasq Address: `address=/example.com/#`
 
-If the **ACTION** is a `list`, then **DATA** is a `[ file | http | https ]` URL.
-Lists must contain only the **TYPE** specified.
+```nginx
+filter {
+    ACTION list TYPE DATA
+}
+```
+
+* **ACTION**: `[ allow | block ]` What action to take
+* **DATA**: Lists of the following data types
+  * `domain`: A raw domain to match. Subdomains are not matched
+  * `hosts`: A hostsfile formatted list
+  * `regex`: A Go-formatted Regular Expression
+  * `wildcard`: Common wildcard formats
+    * Generic: `*.example.com`
+    * Adblock Plus: `||example.com^`
+    * DNSMasq Address: `address=/example.com/#`
+* **DATA**: A `[ file | http | https ]` URL. Must contain only the **TYPE**
+specified.
 
 ```nginx
 filter {
@@ -88,7 +102,7 @@ filter {
 
 This flexibility is extended to wildcard lists as well. AdblockPlus and DNSMasq
 formats are supported for flexibility and ease of migration from other
-solutions. Hosts, zone, and Unbound configuration files are not supported.
+solutions. Zone and Unbound configuration files are not supported.
 
 ## Examples
 
