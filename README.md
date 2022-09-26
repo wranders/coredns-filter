@@ -2,6 +2,7 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/wranders/coredns-filter.svg)](https://pkg.go.dev/github.com/wranders/coredns-filter)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=wranders_coredns-filter&metric=coverage)](https://sonarcloud.io/summary/overall?id=wranders_coredns-filter)
+[![Go Report Card](https://goreportcard.com/badge/github.com/wranders/coredns-filter)](https://goreportcard.com/report/github.com/wranders/coredns-filter)
 
 *filter* - provides domain blocking functionality
 

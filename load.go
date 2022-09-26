@@ -20,9 +20,9 @@ func GetListLoadFunc(uri string) (ListLoadFunc, error) {
 		return nil, fmt.Errorf("invalid list URL %q; %w", uri, err)
 	}
 	if len(listUrl.Scheme) == 0 || len(listUrl.Host) == 0 {
-		// URL parsing ambiguity means Parse does not always return an error witn an
-		// invalid URL. Explicitly check that the Scheme and Host are non-zero
-		// values so that they will be usable later.
+		// URL parsing ambiguity means Parse does not always return an error
+		// with an invalid URL. Explicitly check that the Scheme and Host are
+		// non-zero values so that they will be usable later.
 		return nil, fmt.Errorf("invalid list URL %q; scheme or host empty", uri)
 	}
 	switch listUrl.Scheme {
@@ -58,7 +58,7 @@ func LoadHttp(path string) (io.ReadCloser, error) {
 	}
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf(
-			"an error occured fetching list %q; %s",
+			"an error occurred fetching list %q; %s",
 			path,
 			resp.Status,
 		)
