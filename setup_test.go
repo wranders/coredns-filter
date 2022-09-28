@@ -917,3 +917,66 @@ func TestParserEOLErrorText(t *testing.T) {
 		t.Errorf("unexpected error text `%s`; expected `%s`", err, expected)
 	}
 }
+
+func TestParserListResolver(t *testing.T) {
+	tests := []testSetup{
+		{
+			"listresolver none specified",
+			`filter {
+				listresolver
+			}`,
+			true,
+		},
+		{
+			"listresolver nonsensical",
+			`filter {
+				listresolver noop
+			}`,
+			true,
+		},
+		{
+			"listresolver ip colon no port",
+			`filter {
+				listresolver 9.9.9.9:
+			}`,
+			true,
+		},
+		{
+			"listresolver quad9 default",
+			`filter {
+				listresolver 9.9.9.9
+			}`,
+			false,
+		},
+		{
+			"listresolver quad9 dns",
+			`filter {
+				listresolver dns://9.9.9.9
+			}`,
+			false,
+		},
+		{
+			"listresolver quad9 tls",
+			`filter {
+				listresolver tls://9.9.9.9
+			}`,
+			false,
+		},
+		{
+			"listresolver quad9 unsupported transport",
+			`filter {
+				listresolver https://9.9.9.9
+			}`,
+			true,
+		},
+		{
+			"listresolver quad9 domain name",
+			`filter {
+				listresolver tls://dns.quad9.net
+			}`,
+			true,
+		},
+	}
+
+	RunSetupTests(t, tests)
+}
