@@ -72,6 +72,17 @@ filter {
 * **DURATION** (DEFAULT=`24h`): any value accepted by
 [`time.ParseDuration`](https://pkg.go.dev/time#ParseDuration)
 
+```nginx
+filter {
+    listresolver [ RESOLVER ]
+}
+```
+
+* **RESOLVER**: a resolver IP address to use when fetching remote lists. `dns`
+and `tls` schemes are accepted. Ports may be specified. IPv6 address are
+accepted when used with a scheme and port. Since `listresolver` is intended to
+be used when no other resolvers are available, only IP addresses are accepted.
+
 ## Domain Matching
 
 | Directive                         | Description
@@ -109,10 +120,12 @@ solutions. Zone and Unbound configuration files are not supported.
 
 ```nginx
 # Use an aggregated block list, but allow `vortex.data.microsoft.com` for XBox
-# Live achievements. Respond to blocked domains with `A 0.0.0.0` and `AAAA ::`
-# records. Update list every 24 hours.
+# Live achievements. Retrieve the block list using Quad9 over TLS. Respond to
+# blocked domains with `A 0.0.0.0` and `AAAA ::` records. Update list every 24
+# hours.
 
 filter {
+    listresolver tls://9.9.9.9
     block list domain https://dbl.oisd.nl/basic/
     allow domain vortex.data.microsoft.com
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/coredns/caddy"
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
+	"github.com/coredns/coredns/plugin/pkg/parse"
 	"github.com/miekg/dns"
 )
 
@@ -59,6 +60,10 @@ func Parse(c *caddy.Controller, f *Filter) error {
 			}
 		case "block":
 			if err := parseAction(c, f, ActionTypeBlock); err != nil {
+				return err
+			}
+		case "listresolver":
+			if err := parseListResolver(c, f); err != nil {
 				return err
 			}
 		case "response":
@@ -398,4 +403,36 @@ func parseAddress(rec ...string) (uint16, netip.Addr, error) {
 	// This shouldn't be reached but it's here just in case something
 	// catastrophic happens
 	return 0, netip.Addr{}, fmt.Errorf("unknown response address %q", rec[1])
+}
+
+func parseListResolver(c *caddy.Controller, f *Filter) error {
+	to := c.RemainingArgs()
+	if len(to) == 0 {
+		return c.Errf("no list resolver address specified")
+	}
+	toHosts, err := parse.HostPortOrFile(to...)
+	if err != nil {
+		return err
+	}
+	transport, host := parse.Transport(toHosts[0])
+	ipaddr, err := netip.ParseAddrPort(host)
+	if err != nil {
+		return err
+	}
+	switch transport {
+	case "dns":
+		f.allowConfig.HTTPLoader.Network = "udp"
+		f.blockConfig.HTTPLoader.Network = "udp"
+	case "tls":
+		f.allowConfig.HTTPLoader.Network = "tcp"
+		f.blockConfig.HTTPLoader.Network = "tcp"
+	default:
+		return fmt.Errorf(
+			"%q is not a supported transport for listresolver",
+			transport,
+		)
+	}
+	f.allowConfig.HTTPLoader.ResolverIP = ipaddr
+	f.blockConfig.HTTPLoader.ResolverIP = ipaddr
+	return nil
 }

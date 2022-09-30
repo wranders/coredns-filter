@@ -1,20 +1,25 @@
 package filter
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"os"
 	"strings"
+	"time"
 )
 
-// ListLoadFunc represents a function used to fetch an action list
-type ListLoadFunc func(string) (io.ReadCloser, error)
+// ListLoader contains the means to retrieve a list
+type ListLoader interface {
+	Load(string) (io.ReadCloser, error)
+}
 
-// GetListLoadFunc returns the function used to load an action list based on the
-// scheme of the URL
-func GetListLoadFunc(uri string) (ListLoadFunc, error) {
+// GetListLoader returns the ListLoader associated with the list's URL scheme
+func (a ActionConfig) GetListLoader(uri string) (ListLoader, error) {
 	listUrl, err := url.Parse(uri)
 	if err != nil {
 		return nil, fmt.Errorf("invalid list URL %q; %w", uri, err)
@@ -27,9 +32,9 @@ func GetListLoadFunc(uri string) (ListLoadFunc, error) {
 	}
 	switch listUrl.Scheme {
 	case "file":
-		return LoadFile, nil
+		return a.FileLoader, nil
 	case "http", "https":
-		return LoadHttp, nil
+		return a.HTTPLoader, nil
 	default:
 		return nil, fmt.Errorf(
 			"unsupported list URL scheme %q; "+
@@ -39,8 +44,11 @@ func GetListLoadFunc(uri string) (ListLoadFunc, error) {
 	}
 }
 
-// LoadFile implements ListLoadFunc. Fetches the contents of a local file
-func LoadFile(path string) (io.ReadCloser, error) {
+// FileListLoader retrieves lists from the local filesystem
+type FileListLoader struct{}
+
+// Load implements ListLoader
+func (FileListLoader) Load(path string) (io.ReadCloser, error) {
 	trimmedPath := strings.TrimPrefix(path, "file://")
 	file, err := os.Open(trimmedPath)
 	if err != nil {
@@ -49,10 +57,37 @@ func LoadFile(path string) (io.ReadCloser, error) {
 	return file, nil
 }
 
-// LoadHttp implements ListLoadFunc. Fetches the contents of a remote file over
-// HTTP/S
-func LoadHttp(path string) (io.ReadCloser, error) {
-	resp, err := http.Get(path)
+// HTTPListLoader retrieves lists from remote sources using HTTP/HTTPS
+type HTTPListLoader struct {
+	Network    string
+	ResolverIP netip.AddrPort
+}
+
+// Load implements ListLoader
+func (h HTTPListLoader) Load(path string) (io.ReadCloser, error) {
+	client := http.Client{}
+	if h.ResolverIP.IsValid() {
+		dialFunc := func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{
+				Timeout: time.Second * 5,
+			}
+			return d.DialContext(ctx, h.Network, h.ResolverIP.String())
+		}
+		dialerResolver := &net.Resolver{
+			PreferGo: true,
+			Dial:     dialFunc,
+		}
+		dialer := &net.Dialer{
+			Resolver: dialerResolver,
+		}
+		dialCtx := func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return dialer.DialContext(ctx, network, addr)
+		}
+		client.Transport = &http.Transport{
+			DialContext: dialCtx,
+		}
+	}
+	resp, err := client.Get(path)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching list %q; %w", path, err)
 	}

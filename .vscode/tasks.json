@@ -5,6 +5,11 @@
             "label": "Go Coverage",
             "type": "shell",
             "command": "go test -coverprofile='coverage.out'",
+            "options": {
+                "env": {
+                    "CGO_ENABLED": "0"
+                }
+            },
             "problemMatcher": {
                 "pattern": {
                     "regexp": ".*"

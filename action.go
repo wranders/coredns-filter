@@ -31,7 +31,7 @@ func (a ActionType) String() string {
 }
 
 // ActionList is list of URLs and the functions required to load them
-type ActionList map[string]ListLoadFunc
+type ActionList map[string]ListLoader
 
 // ActionConfig contains the raw domains, expressions and lists that are
 // compiled and used by the Filter
@@ -44,6 +44,9 @@ type ActionConfig struct {
 	hostsLists    ActionList
 	regexLists    ActionList
 	wildcardLists ActionList
+
+	FileLoader FileListLoader
+	HTTPLoader HTTPListLoader
 
 	hostsRegexp *regexp.Regexp
 }
@@ -58,6 +61,8 @@ func NewActionConfig(action ActionType) ActionConfig {
 		hostsLists:    make(ActionList),
 		regexLists:    make(ActionList),
 		wildcardLists: make(ActionList),
+		FileLoader:    FileListLoader{},
+		HTTPLoader:    HTTPListLoader{},
 		hostsRegexp:   regexp.MustCompile(`\s+|\t+`),
 	}
 }
@@ -72,7 +77,7 @@ func (a ActionConfig) AddDomain(domain string) {
 // AddDomainList to match contents
 func (a ActionConfig) AddDomainList(url string) error {
 	if _, ok := a.domainLists[url]; !ok {
-		loadFunc, err := GetListLoadFunc(url)
+		loadFunc, err := a.GetListLoader(url)
 		if err != nil {
 			return err
 		}
@@ -84,7 +89,7 @@ func (a ActionConfig) AddDomainList(url string) error {
 // AddHostsList to match contents
 func (a ActionConfig) AddHostsList(url string) error {
 	if _, ok := a.hostsLists[url]; !ok {
-		loadFunc, err := GetListLoadFunc(url)
+		loadFunc, err := a.GetListLoader(url)
 		if err != nil {
 			return err
 		}
@@ -108,7 +113,7 @@ func (a ActionConfig) AddRegex(expr string) error {
 // AddRegexList to match contents
 func (a ActionConfig) AddRegexList(url string) error {
 	if _, ok := a.regexLists[url]; !ok {
-		loadFunc, err := GetListLoadFunc(url)
+		loadFunc, err := a.GetListLoader(url)
 		if err != nil {
 			return err
 		}
@@ -129,7 +134,7 @@ func (a ActionConfig) AddWildcard(wildcard string) error {
 // AddWildcardList to match contents
 func (a ActionConfig) AddWildcardList(url string) error {
 	if _, ok := a.wildcardLists[url]; !ok {
-		loadFunc, err := GetListLoadFunc(url)
+		loadFunc, err := a.GetListLoader(url)
 		if err != nil {
 			return err
 		}
@@ -165,8 +170,8 @@ func (a ActionConfig) BuildDomains() map[string]bool {
 }
 
 func (a ActionConfig) buildDomainsLists(domains map[string]bool) {
-	for dom, load := range a.domainLists {
-		file, err := load(dom)
+	for dom, loader := range a.domainLists {
+		file, err := loader.Load(dom)
 		if err != nil {
 			log.Errorf(
 				"there was a problem fetching %s domain list %q; %s",
@@ -196,8 +201,8 @@ func (a ActionConfig) buildDomainsLists(domains map[string]bool) {
 }
 
 func (a ActionConfig) buildDomainHostsLists(domains map[string]bool) {
-	for dom, load := range a.hostsLists {
-		file, err := load(dom)
+	for dom, loader := range a.hostsLists {
+		file, err := loader.Load(dom)
 		if err != nil {
 			log.Errorf(
 				"there was a problem fetching %s hosts list %q; %s",
@@ -247,8 +252,8 @@ func (a ActionConfig) BuildRegExps() []*regexp.Regexp {
 }
 
 func (a ActionConfig) buildRegExpsRegex(r map[string]*regexp.Regexp) error {
-	for dom, load := range a.regexLists {
-		file, err := load(dom)
+	for dom, loader := range a.regexLists {
+		file, err := loader.Load(dom)
 		if err != nil {
 			log.Errorf(
 				"there was a problem fetching %s regex list %q; %s",
@@ -290,8 +295,8 @@ func (a ActionConfig) buildRegExpsRegex(r map[string]*regexp.Regexp) error {
 }
 
 func (a ActionConfig) buildRegExpsWildcard(r map[string]*regexp.Regexp) error {
-	for dom, load := range a.wildcardLists {
-		file, err := load(dom)
+	for dom, loader := range a.wildcardLists {
+		file, err := loader.Load(dom)
 		if err != nil {
 			log.Errorf(
 				"there was a problem fetching %s domain list %q; %s",

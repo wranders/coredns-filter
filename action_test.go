@@ -154,3 +154,15 @@ func TestActionWildcardDNSMasq(t *testing.T) {
 	filter := NewTestFilter(t, corefile)
 	filter.Build()
 }
+
+func TestListResolver(t *testing.T) {
+	corefile := `filter {
+		listresolver 9.9.9.9
+		block list domain https://dbl.oisd.nl/basic/
+	}`
+	filter := NewTestFilter(t, corefile)
+	filter.Build()
+	if len(filter.blockDomains) == 0 {
+		t.Errorf("expected no domains; got %d", len(filter.blockDomains))
+	}
+}
