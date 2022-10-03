@@ -74,7 +74,7 @@ filter {
 
 ```nginx
 filter {
-    listresolver [ RESOLVER ]
+    listresolver RESOLVER [ SERVER_NAME ]
 }
 ```
 
@@ -82,6 +82,9 @@ filter {
 and `tls` schemes are accepted. Ports may be specified. IPv6 address are
 accepted when used with a scheme and port. Since `listresolver` is intended to
 be used when no other resolvers are available, only IP addresses are accepted.
+* **SERVER_NAME**: Only used when resolver scheme is `tls`. Must be the host
+name of the resolver, otherwise resolving will fail due to being unable to
+verify the resolver's certificate.
 
 ## Domain Matching
 
@@ -125,7 +128,7 @@ solutions. Zone and Unbound configuration files are not supported.
 # hours.
 
 filter {
-    listresolver tls://9.9.9.9
+    listresolver tls://9.9.9.9 dns.quad9.net
     block list domain https://dbl.oisd.nl/basic/
     allow domain vortex.data.microsoft.com
 }

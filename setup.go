@@ -11,6 +11,7 @@ import (
 	"github.com/coredns/coredns/core/dnsserver"
 	"github.com/coredns/coredns/plugin"
 	"github.com/coredns/coredns/plugin/pkg/parse"
+	"github.com/coredns/coredns/plugin/pkg/transport"
 	"github.com/miekg/dns"
 )
 
@@ -410,27 +411,33 @@ func parseListResolver(c *caddy.Controller, f *Filter) error {
 	if len(to) == 0 {
 		return c.Errf("no list resolver address specified")
 	}
-	toHosts, err := parse.HostPortOrFile(to...)
+	toHosts, err := parse.HostPortOrFile([]string{to[0]}...)
 	if err != nil {
 		return err
 	}
-	transport, host := parse.Transport(toHosts[0])
+	xprt, host := parse.Transport(toHosts[0])
 	ipaddr, err := netip.ParseAddrPort(host)
 	if err != nil {
 		return err
 	}
-	switch transport {
-	case "dns":
-		f.allowConfig.HTTPLoader.Network = "udp"
-		f.blockConfig.HTTPLoader.Network = "udp"
-	case "tls":
-		f.allowConfig.HTTPLoader.Network = "tcp"
-		f.blockConfig.HTTPLoader.Network = "tcp"
+	switch xprt {
+	case transport.DNS, transport.TLS:
+		f.allowConfig.HTTPLoader.Network = xprt
+		f.blockConfig.HTTPLoader.Network = xprt
 	default:
 		return fmt.Errorf(
 			"%q is not a supported transport for listresolver",
-			transport,
+			xprt,
 		)
+	}
+	if xprt == transport.TLS {
+		if len(to) == 1 {
+			return c.Err(
+				"listresolver is using tls scheme without a server name",
+			)
+		}
+		f.allowConfig.HTTPLoader.ServerName = to[1]
+		f.blockConfig.HTTPLoader.ServerName = to[1]
 	}
 	f.allowConfig.HTTPLoader.ResolverIP = ipaddr
 	f.blockConfig.HTTPLoader.ResolverIP = ipaddr

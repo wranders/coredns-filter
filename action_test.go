@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"net/http"
 	"testing"
 )
 
@@ -156,6 +157,7 @@ func TestActionWildcardDNSMasq(t *testing.T) {
 }
 
 func TestListResolver(t *testing.T) {
+	http.DefaultTransport = nil
 	corefile := `filter {
 		listresolver 9.9.9.9
 		block list domain https://dbl.oisd.nl/basic/
@@ -163,6 +165,19 @@ func TestListResolver(t *testing.T) {
 	filter := NewTestFilter(t, corefile)
 	filter.Build()
 	if len(filter.blockDomains) == 0 {
-		t.Errorf("expected no domains; got %d", len(filter.blockDomains))
+		t.Error("expected domains; got none")
+	}
+}
+
+func TestListResolverTLS(t *testing.T) {
+	http.DefaultTransport = nil
+	corefile := `filter {
+		listresolver tls://9.9.9.9 dns.quad9.net
+		block list domain https://dbl.oisd.nl/basic/
+	}`
+	filter := NewTestFilter(t, corefile)
+	filter.Build()
+	if len(filter.blockDomains) == 0 {
+		t.Errorf("expected domains; got none")
 	}
 }

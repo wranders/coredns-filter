@@ -2,6 +2,7 @@ package filter
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
@@ -11,6 +12,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/coredns/coredns/plugin/pkg/transport"
 )
 
 // ListLoader contains the means to retrieve a list
@@ -60,22 +63,37 @@ func (FileListLoader) Load(path string) (io.ReadCloser, error) {
 // HTTPListLoader retrieves lists from remote sources using HTTP/HTTPS
 type HTTPListLoader struct {
 	Network    string
+	ServerName string
 	ResolverIP netip.AddrPort
 }
 
 // Load implements ListLoader
 func (h HTTPListLoader) Load(path string) (io.ReadCloser, error) {
-	client := http.Client{}
+	client := &http.Client{}
 	if h.ResolverIP.IsValid() {
 		dialFunc := func(ctx context.Context, network, address string) (net.Conn, error) {
 			d := net.Dialer{
 				Timeout: time.Second * 5,
 			}
-			return d.DialContext(ctx, h.Network, h.ResolverIP.String())
+			net, err := h.transportToNetwork(h.Network)
+			if err != nil {
+				// This shouldn't be reached. See default return in
+				// HTTPListLoader.transportToNetwork
+				return nil, err
+			}
+			conn, err := d.DialContext(ctx, net, h.ResolverIP.String())
+			if net == "tcp" {
+				tlsConfig := &tls.Config{
+					ServerName: h.ServerName,
+				}
+				return tls.Client(conn, tlsConfig), err
+			}
+			return conn, err
 		}
 		dialerResolver := &net.Resolver{
-			PreferGo: true,
-			Dial:     dialFunc,
+			PreferGo:     true,
+			StrictErrors: true,
+			Dial:         dialFunc,
 		}
 		dialer := &net.Dialer{
 			Resolver: dialerResolver,
@@ -99,4 +117,20 @@ func (h HTTPListLoader) Load(path string) (io.ReadCloser, error) {
 		)
 	}
 	return resp.Body, nil
+}
+
+// convert the dns transport type to the corresponding network used by a dialer.
+// loadTransport is expected to be a constant from
+// github.com/coredns/coredns/plugin/pkg/transport
+func (h HTTPListLoader) transportToNetwork(loadTransport string) (string, error) {
+	switch loadTransport {
+	case transport.DNS:
+		return "udp", nil
+	case transport.TLS:
+		return "tcp", nil
+	default:
+		// This error shouldn't be reached in normal circumstances since the
+		// Corefile parser only sets DNS or TLS transport
+		return "", fmt.Errorf("unknown listresolver transport %q", loadTransport)
+	}
 }
