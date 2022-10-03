@@ -956,9 +956,16 @@ func TestParserListResolver(t *testing.T) {
 			false,
 		},
 		{
-			"listresolver quad9 tls",
+			"listresolver quad9 tls without server name",
 			`filter {
 				listresolver tls://9.9.9.9
+			}`,
+			true,
+		},
+		{
+			"listresolver quad9 tls without server name",
+			`filter {
+				listresolver tls://9.9.9.9 dns.quad9.net
 			}`,
 			false,
 		},
