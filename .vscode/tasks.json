@@ -40,8 +40,13 @@
         {
             "label": "Run Sonar-Scanner",
             "type": "shell",
-            "command": [
-                "sonar-scanner.bat",
+            "linux":{
+                "command": "~/Downloads/sonar-scanner/bin/sonar-scanner"
+            },
+            "windows": {
+                "command": "sonar-scanner.bat"
+            },
+            "args": [
                 "-D'sonar.projectKey=coredns-filter'",
                 "-D'sonar.sources=.'",
                 "-D'sonar.exclusions=**/*_test.go,.testdata/*'",
@@ -64,7 +69,6 @@
             "type": "promptString",
             "id": "sonarqubeUrl",
             "description": "SonarQube URL",
-            "default": "http://wsl.local:9000"
         },
         {
             "type": "promptString",
