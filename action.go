@@ -51,6 +51,14 @@ type ActionConfig struct {
 	hostsRegexp *regexp.Regexp
 }
 
+// DNSNameRegexp matches valid domain names.
+// Sourced from https://github.com/asaskevich/govalidator; const DNSName
+//
+// MIT Licensed, Copyright (c) 2014-2020 Alex Saskevich
+var DNSNameRegexp = regexp.MustCompile(
+	`^([a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62}){1}(\.[a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62})*[\._]?$`,
+)
+
 // NewActionConfig returns an action ready to accept configurations
 func NewActionConfig(action ActionType) ActionConfig {
 	return ActionConfig{
@@ -143,15 +151,20 @@ func (a ActionConfig) AddWildcardList(url string) error {
 	return nil
 }
 
+func (ActionConfig) cleanListLine(line string) string {
+	out := strings.TrimPrefix(line, ".")       // remove pcre-style wildcard prefix
+	out = strings.TrimPrefix(out, "*.")        // remove generic wildcard
+	out = strings.TrimPrefix(out, "||")        // remove adblock plus prefix
+	out = strings.TrimSuffix(out, "^")         // remove adblock plus suffix
+	out = strings.TrimPrefix(out, "address=/") // remove dnsmasq declaration
+	out = strings.Split(out, "/")[0]           // remove dnsmasq ip address, if any
+	return out
+}
+
 func (a ActionConfig) makeWildcard(expr string) string {
-	wc := strings.TrimPrefix(expr, ".")
-	wc = strings.TrimPrefix(wc, "*.")
-	wc = strings.TrimPrefix(wc, "||")
-	wc = strings.TrimSuffix(wc, "^")
-	wc = strings.TrimPrefix(wc, "address=/")
-	wc = strings.Split(wc, "/")[0]
-	wc = strings.ReplaceAll(wc, ".", "\\.")
-	return fmt.Sprintf("^.*\\.%s|^%s", wc, wc)
+	out := strings.ReplaceAll(expr, ".", "\\.") // escape periods in domain name
+	out = fmt.Sprintf("^.*\\.%s|^%s", out, out) // format to match root and sub domains
+	return out
 }
 
 // BuildDomains creates a map of unique domains from explicit declarations and
@@ -314,11 +327,11 @@ func (a ActionConfig) buildRegExpsWildcard(r map[string]*regexp.Regexp) error {
 			line := scanner.Bytes()
 			line = bytes.TrimSpace(line)
 
-			if a.shouldSkip(line) {
+			var ok bool
+			var expString string
+			if ok, expString = a.getWildcardString(line); !ok {
 				continue
 			}
-			lineStr := string(line)
-			expString := a.makeWildcard(lineStr)
 			if _, ok := r[expString]; ok {
 				continue
 			}
@@ -328,17 +341,29 @@ func (a ActionConfig) buildRegExpsWildcard(r map[string]*regexp.Regexp) error {
 				log.Errorf(
 					"error compiling %s wildcard %q { %s } from list %s; %s",
 					a.configType,
-					lineStr,
+					a.cleanListLine(string(line)),
 					expString,
 					dom,
 					err,
 				)
-			} else {
-				r[expString] = exp
+				continue
 			}
+			r[expString] = exp
 		}
 	}
 	return nil
+}
+
+func (a ActionConfig) getWildcardString(line []byte) (bool, string) {
+	// strip comments and platform-specific formatting
+	if a.shouldSkip(line) {
+		return false, ""
+	}
+	clean := a.cleanListLine(string(line))
+	if !DNSNameRegexp.MatchString(clean) {
+		return false, ""
+	}
+	return true, a.makeWildcard(clean)
 }
 
 func (a ActionConfig) shouldSkip(line []byte) bool {
