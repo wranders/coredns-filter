@@ -157,6 +157,9 @@ func TestActionWildcardDNSMasq(t *testing.T) {
 }
 
 func TestListResolver(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping listresolver test; dns firewalling will cause this to fail")
+	}
 	http.DefaultTransport = nil
 	corefile := `filter {
 		listresolver 9.9.9.9
@@ -170,6 +173,9 @@ func TestListResolver(t *testing.T) {
 }
 
 func TestListResolverTLS(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping listresolver test; dns firewalling will cause this to fail")
+	}
 	http.DefaultTransport = nil
 	corefile := `filter {
 		listresolver tls://9.9.9.9 dns.quad9.net

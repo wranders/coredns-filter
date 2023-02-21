@@ -4,7 +4,7 @@
         {
             "label": "Go Coverage",
             "type": "shell",
-            "command": "go test -coverprofile='coverage.out'",
+            "command": "go test -short -coverprofile='coverage.out'",
             "options": {
                 "env": {
                     "CGO_ENABLED": "0"
