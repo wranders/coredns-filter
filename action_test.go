@@ -14,9 +14,6 @@ func TestActionList404(t *testing.T) {
 	}`
 	filter := NewTestFilter(t, corefile)
 	filter.Build()
-	// if filter.blockTree.Len() != 0 {
-	// 	t.Error("block tree should be empty")
-	// }
 	if len(filter.blockDomains) != 0 {
 		t.Error("block domains should be empty")
 	}
@@ -31,12 +28,6 @@ func TestActionListDomain(t *testing.T) {
 	}`
 	filter := NewTestFilter(t, corefile)
 	filter.Build()
-	// if filter.blockTree.Len() != 2 {
-	// 	t.Errorf(
-	// 		"expected two domains; found %d",
-	// 		filter.blockTree.Len(),
-	// 	)
-	// }
 	if len(filter.blockDomains) != 2 {
 		t.Errorf(
 			"expected two domains; found %d",
@@ -94,12 +85,6 @@ func TestActionMissingFile(t *testing.T) {
 	}`
 	filter := NewTestFilter(t, corefile)
 	filter.Build()
-	// if filter.blockTree.Len() != 0 {
-	// 	t.Errorf(
-	// 		"expected no domains; found %d",
-	// 		filter.blockTree.Len(),
-	// 	)
-	// }
 	if len(filter.blockDomains) != 0 {
 		t.Errorf(
 			"expected no domains; found %d",
@@ -114,12 +99,6 @@ func TestActionHTTPList(t *testing.T) {
 	}`
 	filter := NewTestFilter(t, corefile)
 	filter.Build()
-	// if filter.blockTree.Len() == 0 {
-	// 	t.Errorf(
-	// 		"expected domains from remote list; found %d",
-	// 		filter.blockTree.Len(),
-	// 	)
-	// }
 	if len(filter.blockDomains) == 0 {
 		t.Errorf(
 			"expected domains from remote list; found %d",
@@ -134,12 +113,6 @@ func TestActionNonExistentHTTPList(t *testing.T) {
 	}`
 	filter := NewTestFilter(t, corefile)
 	filter.Build()
-	// if filter.blockTree.Len() != 0 {
-	// 	t.Errorf(
-	// 		"expected no domains from non-existent remote list; found %d",
-	// 		filter.blockTree.Len(),
-	// 	)
-	// }
 	if len(filter.blockDomains) != 0 {
 		t.Errorf(
 			"expected no domains from non-existent remote list; found %d",
