@@ -340,14 +340,14 @@ func TestAllowList(t *testing.T) {
 		{
 			"allow list domain http",
 			`filter {
-				allow list domain http://dbl.oisd.nl/basic/
+				allow list domain http://small.oisd.nl/domains
 			}`,
 			false,
 		},
 		{
 			"allow list domain https",
 			`filter {
-				allow list domain https://dbl.oisd.nl/basic/
+				allow list domain https://small.oisd.nl/domains
 			}`,
 			false,
 		},
@@ -518,14 +518,14 @@ func TestBlockList(t *testing.T) {
 		{
 			"block list domain http",
 			`filter {
-				block list domain http://dbl.oisd.nl/basic/
+				block list domain http://small.oisd.nl/domains
 			}`,
 			false,
 		},
 		{
 			"block list domain https",
 			`filter {
-				block list domain https://dbl.oisd.nl/basic/
+				block list domain https://small.oisd.nl/domains
 			}`,
 			false,
 		},

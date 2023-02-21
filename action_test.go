@@ -95,7 +95,7 @@ func TestActionMissingFile(t *testing.T) {
 
 func TestActionHTTPList(t *testing.T) {
 	corefile := `filter {
-		block list domain https://dbl.oisd.nl/basic/
+		block list domain https://small.oisd.nl/domains
 	}`
 	filter := NewTestFilter(t, corefile)
 	filter.Build()
@@ -136,7 +136,7 @@ func TestListResolver(t *testing.T) {
 	http.DefaultTransport = nil
 	corefile := `filter {
 		listresolver 9.9.9.9
-		block list domain https://dbl.oisd.nl/basic/
+		block list domain https://small.oisd.nl/domains
 	}`
 	filter := NewTestFilter(t, corefile)
 	filter.Build()
@@ -152,7 +152,7 @@ func TestListResolverTLS(t *testing.T) {
 	http.DefaultTransport = nil
 	corefile := `filter {
 		listresolver tls://9.9.9.9 dns.quad9.net
-		block list domain https://dbl.oisd.nl/basic/
+		block list domain https://small.oisd.nl/domains
 	}`
 	filter := NewTestFilter(t, corefile)
 	filter.Build()
