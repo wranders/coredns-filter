@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow
+---
+name: Build Container
+on:
+  push:
+    tags:
+    - "v*"
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+    - uses: actions/checkout@v3
+
+    - id: get-tags
+      run: |
+        TAGS=(
+          "ghcr.io/wranders/coredns-filter:latest"
+          "quay.io/wranders/coredns-filter:latest"
+        )
+        if [[ $GITHUB_REF_TYPE == 'tag' ]]; then
+          VERSION=$(echo "${GITHUB_REF_NAME}" | sed 's/v*//')
+          TAGS+=(
+            "ghcr.io/wranders/coredns-filter:${VERSION}"
+            "quay.io/wranders/coredns-filter:${VERSION}"
+          )
+        fi
+        TAGSCSV=$(printf '%s,' "${TAGS[@]}")
+        echo "tags=${TAGSCSV:0:-1}" >> $GITHUB_OUTPUT
+
+    - uses: docker/setup-qemu-action@v2
+      with:
+        platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
+
+    - uses: docker/setup-buildx-action@v2
+      id: buildx
+
+    - uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - uses: docker/login-action@v2
+      with:
+        registry: quay.io
+        username: ${{ secrets.QUAY_USERNAME }}
+        password: ${{ secrets.QUAY_TOKEN }}
+    
+    - uses: docker/build-push-action@v3
+      with:
+        builder: ${{ steps.buildx.outputs.name }}
+        file: Containerfile
+        platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
+        push: true
+        tags: ${{ steps.get-tags.outputs.tags }}
