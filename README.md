@@ -129,7 +129,7 @@ solutions. Zone and Unbound configuration files are not supported.
 
 filter {
     listresolver tls://9.9.9.9 dns.quad9.net
-    block list domain https://dbl.oisd.nl/basic/
+    block list domain https://small.oisd.nl/domains
     allow domain vortex.data.microsoft.com
 }
 ```
@@ -148,7 +148,7 @@ filter {
 }
 ```
 
-## Buliding
+## Building
 
 Clone the [coredns](https://github.com/coredns/coredns) repository and change
 into it's directory.
@@ -183,20 +183,47 @@ Replace("cache:cache", "filter:github.com/wranders/coredns-filter`ncache:cache")
 Set-Content -Path plugin.cfg
 ```
 
-Generate the plugin files:
+Build using `make`:
 
 ```sh
-go generate
+make
 ```
 
-And build:
+Or if `make` is not available, simply run:
 
 ```sh
-go build
+go generate && go build
 ```
 
 The `coredns` binary will be in the root of the project directory, unless
 otherwise specified by the `-o` flag.
+
+## Container
+
+A pre-built Container with this plugin is provided at the following locations:
+
+```sh
+ghcr.io/wranders/coredns-filter:latest
+```
+
+```sh
+quay.io/wranders/coredns-filter:latest
+```
+
+CPU architectures include `armv6` and `armv7` (Raspberry Pi), `aarch64`, and
+`x86_64`.
+
+The `coredns` binary is located at the root of the filesystem, so a `Corefile`
+mounted to `/Corefile` will be automatically detected without futher
+configuration.
+
+Ports `53/udp` (DNS), `443` (DNS-over-HTTPS), and `853` (DNS-over-TLS) are
+exposed by default.
+
+```sh
+[docker/podman] run -d -v ./Corefile:/Corefile -p 53:53/udp \
+    ghcr.io/wranders/coredns-filter:latest
+```
 
 ## License
 
