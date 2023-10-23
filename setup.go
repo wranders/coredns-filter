@@ -77,7 +77,7 @@ func Parse(c *caddy.Controller, f *Filter) error {
 			}
 			duration, err := time.ParseDuration(c.Val())
 			if err != nil {
-				return c.Errf("invalid update interval %q; %w", c.Val(), err)
+				return c.Errf("invalid update interval %q; %s", c.Val(), err)
 			}
 			f.updateInterval = duration
 		default:
@@ -122,53 +122,6 @@ func parseAction(c *caddy.Controller, f *Filter, a ActionType) error {
 	return nil
 }
 
-func parseActionDomain(c *caddy.Controller, f *Filter, a ActionType) error {
-	if !c.NextArg() {
-		return c.Errf("no %s domain specified", a)
-	}
-	switch a {
-	case ActionTypeAllow:
-		f.allowConfig.AddDomain(c.Val())
-	case ActionTypeBlock:
-		f.blockConfig.AddDomain(c.Val())
-	}
-	return ensureEOL(c)
-}
-
-func parseActionRegex(c *caddy.Controller, f *Filter, a ActionType) error {
-	if !c.NextArg() {
-		return c.Errf("no %s regex specified", a)
-	}
-	switch a {
-	case ActionTypeAllow:
-		if err := f.allowConfig.AddRegex(c.Val()); err != nil {
-			return err
-		}
-	case ActionTypeBlock:
-		if err := f.blockConfig.AddRegex(c.Val()); err != nil {
-			return err
-		}
-	}
-	return ensureEOL(c)
-}
-
-func parseActionWildcard(c *caddy.Controller, f *Filter, a ActionType) error {
-	if !c.NextArg() {
-		return c.Errf("no %s regex specified", a)
-	}
-	switch a {
-	case ActionTypeAllow:
-		if err := f.allowConfig.AddWildcard(c.Val()); err != nil {
-			return err
-		}
-	case ActionTypeBlock:
-		if err := f.blockConfig.AddWildcard(c.Val()); err != nil {
-			return err
-		}
-	}
-	return ensureEOL(c)
-}
-
 func parseActionList(c *caddy.Controller, f *Filter, a ActionType) error {
 	if !c.NextArg() {
 		return c.Errf("no %s list type specified", a)
@@ -199,74 +152,6 @@ func parseActionList(c *caddy.Controller, f *Filter, a ActionType) error {
 		)
 	}
 	return nil
-}
-
-func parseActionListDomain(c *caddy.Controller, f *Filter, a ActionType) error {
-	if !c.NextArg() {
-		return c.Errf("no %s domain list specified", a)
-	}
-	switch a {
-	case ActionTypeAllow:
-		if err := f.allowConfig.AddDomainList(c.Val()); err != nil {
-			return err
-		}
-	case ActionTypeBlock:
-		if err := f.blockConfig.AddDomainList(c.Val()); err != nil {
-			return err
-		}
-	}
-	return ensureEOL(c)
-}
-
-func parseActionListHosts(c *caddy.Controller, f *Filter, a ActionType) error {
-	if !c.NextArg() {
-		return c.Errf("no %s hosts list specified", a)
-	}
-	switch a {
-	case ActionTypeAllow:
-		if err := f.allowConfig.AddHostsList(c.Val()); err != nil {
-			return err
-		}
-	case ActionTypeBlock:
-		if err := f.blockConfig.AddHostsList(c.Val()); err != nil {
-			return err
-		}
-	}
-	return ensureEOL(c)
-}
-
-func parseActionListRegex(c *caddy.Controller, f *Filter, a ActionType) error {
-	if !c.NextArg() {
-		return c.Errf("no %s regex list specified", a)
-	}
-	switch a {
-	case ActionTypeAllow:
-		if err := f.allowConfig.AddRegexList(c.Val()); err != nil {
-			return err
-		}
-	case ActionTypeBlock:
-		if err := f.blockConfig.AddRegexList(c.Val()); err != nil {
-			return err
-		}
-	}
-	return ensureEOL(c)
-}
-
-func parseActionListWildcard(c *caddy.Controller, f *Filter, a ActionType) error {
-	if !c.NextArg() {
-		return c.Errf("no %s wildcard list specified", a)
-	}
-	switch a {
-	case ActionTypeAllow:
-		if err := f.allowConfig.AddWildcardList(c.Val()); err != nil {
-			return err
-		}
-	case ActionTypeBlock:
-		if err := f.blockConfig.AddWildcardList(c.Val()); err != nil {
-			return err
-		}
-	}
-	return ensureEOL(c)
 }
 
 func parseResponse(c *caddy.Controller, f *Filter) error {
@@ -315,8 +200,6 @@ func parseResponseAddress(c *caddy.Controller, f *Filter) error {
 		)
 	}
 
-	// ip4 := netip.IPv4Unspecified()
-	// ip6 := netip.IPv6Unspecified()
 	resp := RespAddress{
 		IP4: netip.IPv4Unspecified(),
 		IP6: netip.IPv6Unspecified(),

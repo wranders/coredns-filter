@@ -10,6 +10,35 @@ import (
 	"github.com/miekg/dns"
 )
 
+func TestResponseInvalid(t *testing.T) {
+	tests := []TestSetup{
+		{
+			"check no respose type",
+			`filter {
+				response
+			}`,
+			true,
+		},
+		{
+			"check response unknown directive",
+			`filter {
+				response noop
+			}`,
+			true,
+		},
+		{
+			"check response no address specified",
+			`filter {
+				response address
+			}`,
+			true,
+		},
+	}
+	for _, test := range tests {
+		RunSetupTest(t, test)
+	}
+}
+
 func TestFilterResponseNoData(t *testing.T) {
 	corefile := `filter {
 		block domain example.com
@@ -103,6 +132,24 @@ func TestFilterResponseAddress(t *testing.T) {
 func TestFilterResponseNonAddressQuestion(t *testing.T) {
 	corefile := `filter {
 		block domain example.com
+	}`
+
+	filter := NewTestFilter(t, corefile)
+	filter.Build()
+	req := new(dns.Msg).SetQuestion("example.com", dns.TypeCNAME)
+	rec := dnstest.NewRecorder(&test.ResponseWriter{})
+	filter.ServeDNS(context.Background(), rec, req)
+	if len(rec.Msg.Answer) != 0 {
+		t.Error(
+			"error: ServeDNS error nodata4, response should contain no records",
+		)
+	}
+}
+
+func TestFilterResponseNull(t *testing.T) {
+	corefile := `filter {
+		block domain example.com
+		response null
 	}`
 
 	filter := NewTestFilter(t, corefile)
