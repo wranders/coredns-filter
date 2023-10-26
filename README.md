@@ -25,6 +25,7 @@ filter {
   * `domain`: A raw domain to match. Subdomains are not matched
   * `regex`: A Go-formatted Regular Expression
   * `wildcard`: Common wildcard formats
+    * Bare: `example.com`
     * Generic: `*.example.com`
     * Adblock Plus: `||example.com^`
     * DNSMasq Address: `address=/example.com/#`
@@ -41,6 +42,7 @@ filter {
   * `hosts`: A hostsfile formatted list
   * `regex`: A Go-formatted Regular Expression
   * `wildcard`: Common wildcard formats
+    * Bare: `example.com`
     * Generic: `*.example.com`
     * Adblock Plus: `||example.com^`
     * DNSMasq Address: `address=/example.com/#`
@@ -104,6 +106,11 @@ avoid confusing the CoreDNS Corefile parser with symbols.
 With how wildcard strings are cleaned and compiled, the following
 `block wildcard` directives are identical.
 
+**IMPORTANT**: Allowed domains ***always*** take precedence. If a domain is in
+an `allow list` and a domain in that list is blocked explicitly or on
+`block list`, ***it will be allowed***. Think of `allow` directives as force
+overrides and use them with caution.
+
 ```nginx
 filter {
     block wildcard example.com
@@ -115,9 +122,9 @@ filter {
 }
 ```
 
-This flexibility is extended to wildcard lists as well. AdblockPlus and DNSMasq
-formats are supported for flexibility and ease of migration from other
-solutions. Zone and Unbound configuration files are not supported.
+AdblockPlus and DNSMasq formats are supported for flexibility and ease of
+migration from other solutions. Zone and Unbound configuration files are not
+supported.
 
 ## Examples
 
@@ -129,7 +136,7 @@ solutions. Zone and Unbound configuration files are not supported.
 
 filter {
     listresolver tls://9.9.9.9 dns.quad9.net
-    block list domain https://small.oisd.nl/domains
+    block list domain https://small.oisd.nl/
     allow domain vortex.data.microsoft.com
 }
 ```

@@ -109,7 +109,7 @@ func (h HTTPListLoader) Load(path string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error fetching list %q; %w", path, err)
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf(
 			"an error occurred fetching list %q; %s",
 			path,

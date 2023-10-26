@@ -23,13 +23,15 @@ type Filter struct {
 
 	sync.RWMutex
 
-	allowConfig  ActionConfig
-	allowDomains map[string]bool
-	allowRegex   []*regexp.Regexp
+	allowConfig    ActionConfig
+	allowDomains   map[string]bool
+	allowRegex     []*regexp.Regexp
+	allowWildcards []string
 
-	blockConfig  ActionConfig
-	blockDomains map[string]bool
-	blockRegex   []*regexp.Regexp
+	blockConfig    ActionConfig
+	blockDomains   map[string]bool
+	blockRegex     []*regexp.Regexp
+	blockWildcards []string
 
 	response Response
 
@@ -40,12 +42,14 @@ type Filter struct {
 
 func newFilter() *Filter {
 	return &Filter{
-		allowConfig:  NewActionConfig(ActionTypeAllow),
-		allowDomains: make(map[string]bool),
-		allowRegex:   make([]*regexp.Regexp, 0),
-		blockConfig:  NewActionConfig(ActionTypeBlock),
-		blockDomains: make(map[string]bool),
-		blockRegex:   make([]*regexp.Regexp, 0),
+		allowConfig:    NewActionConfig(ActionTypeAllow),
+		allowDomains:   make(map[string]bool),
+		allowRegex:     make([]*regexp.Regexp, 0),
+		allowWildcards: make([]string, 0),
+		blockConfig:    NewActionConfig(ActionTypeBlock),
+		blockDomains:   make(map[string]bool),
+		blockRegex:     make([]*regexp.Regexp, 0),
+		blockWildcards: make([]string, 0),
 		response: RespAddress{
 			IP4: netip.IPv4Unspecified(),
 			IP6: netip.IPv6Unspecified(),
@@ -104,6 +108,14 @@ func (f *Filter) isAllowed(qname string) bool {
 			return true
 		}
 	}
+
+	for _, wildcard := range f.allowWildcards {
+		if qname == wildcard || strings.HasSuffix(qname, "."+wildcard) {
+			log.Debugf("request %q matched allow wildcard %q", qname, wildcard)
+			return true
+		}
+	}
+
 	return false
 }
 
@@ -116,6 +128,13 @@ func (f *Filter) isBlocked(qname string) bool {
 	for _, exp := range f.blockRegex {
 		if exp.MatchString(qname) {
 			log.Debugf("request %q matched block regex", qname)
+			return true
+		}
+	}
+
+	for _, wildcard := range f.blockWildcards {
+		if qname == wildcard || strings.HasSuffix(qname, "."+wildcard) {
+			log.Debugf("request %q matched block wildcard %q", qname, wildcard)
 			return true
 		}
 	}
@@ -134,27 +153,66 @@ func (f *Filter) OnShutdown() error {
 // Build the domain and regular expression lists used to determine how domains
 // are handled
 func (f *Filter) Build() {
-	allowDomains := f.allowConfig.BuildDomains()
-	allowRegex := f.allowConfig.BuildRegExps()
-	blockDomains := f.blockConfig.BuildDomains()
-	blockRegex := f.blockConfig.BuildRegExps()
+	var allowDomains = make(map[string]bool)
+	f.allowConfig.BuildDomains(allowDomains)
+	f.allowConfig.BuildHosts(allowDomains)
+
+	var blockDomains = make(map[string]bool)
+	f.blockConfig.BuildDomains(blockDomains)
+	f.blockConfig.BuildHosts(blockDomains)
+
+	var allowRegexBuilder = make(map[string]*regexp.Regexp)
+	f.allowConfig.BuildRegExps(allowRegexBuilder)
+	allowRegex := f.consolidateRegex(allowRegexBuilder)
+
+	var blockRegexBuilder = make(map[string]*regexp.Regexp)
+	f.blockConfig.BuildRegExps(blockRegexBuilder)
+	blockRegex := f.consolidateRegex(blockRegexBuilder)
+
+	var allowWildcardBuilder = make(map[string]bool)
+	f.allowConfig.BuildWildcards(allowWildcardBuilder)
+	allowWildcards := f.consolidateWildcards(allowWildcardBuilder)
+
+	var blockWildcardBuilder = make(map[string]bool)
+	f.blockConfig.BuildWildcards(blockWildcardBuilder)
+	blockWildcards := f.consolidateWildcards(blockWildcardBuilder)
 
 	f.Lock()
 	f.allowDomains = allowDomains
 	f.allowRegex = allowRegex
+	f.allowWildcards = allowWildcards
 	f.blockDomains = blockDomains
 	f.blockRegex = blockRegex
+	f.blockWildcards = blockWildcards
 	f.Unlock()
 
 	log.Infof(
 		"Successfully updated filter; "+
-			"%d allowed domains, %d allowed regular expressions; "+
-			"%d blocked domains, %d blocked regular expressions",
+			"%d allowed domains, %d allowed regular expressions, %d allowed wildcards; "+
+			"%d blocked domains, %d blocked regular expressions, %d blocked wildcards",
 		len(f.allowDomains),
 		len(f.allowRegex),
+		len(f.allowWildcards),
 		len(f.blockDomains),
 		len(f.blockRegex),
+		len(f.blockWildcards),
 	)
+}
+
+func (f *Filter) consolidateRegex(regexes map[string]*regexp.Regexp) []*regexp.Regexp {
+	out := make([]*regexp.Regexp, 0, len(regexes))
+	for _, expr := range regexes {
+		out = append(out, expr)
+	}
+	return out
+}
+
+func (f *Filter) consolidateWildcards(wildcards map[string]bool) []string {
+	out := make([]string, 0, len(wildcards))
+	for wildcard := range wildcards {
+		out = append(out, wildcard)
+	}
+	return out
 }
 
 // InitUpdate starts the update timer. This should only be run once on startup.
