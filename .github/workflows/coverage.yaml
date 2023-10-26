@@ -5,7 +5,7 @@ on:
     - master
     - fix-*
     - feat-*
-    - wildcard-rework
+    - update-*
   pull_request:
     types:
     - opened
