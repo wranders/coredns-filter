@@ -21,7 +21,7 @@ RUN git clone --depth 1 --branch ${COREDNS_VERSION} \
 
 WORKDIR /coredns/
 
-RUN go get -u github.com/wranders/coredns-filter
+RUN go get github.com/wranders/coredns-filter
 
 RUN sed -i '/^cache:cache/i filter:github.com/wranders/coredns-filter' plugin.cfg
 
