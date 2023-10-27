@@ -7,6 +7,10 @@ on:
     - feat-*
     - update-*
   pull_request:
+    paths:
+    - '**.go'
+    - go.mod
+    - go.sum
     types:
     - opened
     - synchronize
