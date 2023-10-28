@@ -1,0 +1,22 @@
+# Disabling automatic releases until I can figure out a working action, or write
+# one myself.
+#
+# name: Release
+# on:
+#   push:
+#     tags:
+#     - "v*"
+# jobs:
+#   release:
+#     runs-on: ubuntu-latest
+#     steps:
+#     - uses: actions/checkout@v4
+#       with:
+#         fetch-depth: 1
+#         fetch-tags: true
+#     - run: git tag -l --format='%(contents:subject)%0a%0a%(contents:body)' > RELEASE.txt
+#     - uses: ncipollo/release-action@v1
+#       env:
+#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#       with:
+#         bodyFile: RELEASE.txt
