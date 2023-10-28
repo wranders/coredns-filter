@@ -1,7 +1,7 @@
 # Go version used by Coredns
-ARG GO_VERSION=1.19.13
+ARG GO_VERSION=1.20.10
 # Coredns version used by coredns-filter
-ARG COREDNS_VERSION=v1.10.0
+ARG COREDNS_VERSION=v1.11.1
 
 #===============================================================================
 
