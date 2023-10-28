@@ -13,7 +13,7 @@ jobs:
       run: |
         TAG=$(echo ${{ github.ref }} | sed -e 's|.*/\(.*\)|\1|')
         echo "::set-output name=tag::${TAG}"
-        SUBJ=$(git tag -l --format='%(contents:subject)' $TAG)
+        SUBJ=$(git tag -l --format='%(contents:subject)%0a%0a%(contents:body)' $TAG)
         echo "::set-output name=subject::${SUBJ}"
     - uses: actions/create-release@v1
       env:
