@@ -9,8 +9,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - run: git tag -l --format='%(contents:subject)%0a%0a%(contents:body)' > RELEASE.txt
-    - uses: softprops/action-gh-release@v1
+    - uses: ncipollo/release-action@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        body_path: RELEASE.txt
+        bodyFile: RELEASE.txt
