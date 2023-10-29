@@ -8,9 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-      with:
-        fetch-depth: 1
-        fetch-tags: true
     - run: git tag -l --format='%(contents:subject)%0a%0a%(contents:body)' > RELEASE.txt
     - uses: softprops/action-gh-release@v1
       env:
