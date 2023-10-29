@@ -7,18 +7,12 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - run: git fetch --tags --force
-    - id: taginfo
-      run: |
-        TAG=$(echo ${{ github.ref }} | sed -e 's|.*/\(.*\)|\1|')
-        echo "::set-output name=tag::${TAG}"
-        SUBJ=$(git tag -l --format='%(contents:subject)%0a%0a%(contents:body)' $TAG)
-        echo "::set-output name=subject::${SUBJ}"
-    - uses: actions/create-release@v1
+    - uses: actions/checkout@v4
+      with:
+        fetch-tags: true
+    - run: git tag -l --format='%(contents:subject)%0a%0a%(contents:body)' > RELEASE.txt
+    - uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
-        release_name: ${{ steps.taginfo.outputs.tag }}
-        body: ${{ steps.taginfo.outputs.subject }}
+        body_path: RELEASE.txt
