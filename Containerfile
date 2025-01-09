@@ -57,7 +57,7 @@ COPY --from=BUILDER /sbin/nologin /sbin/
 
 COPY --from=BUILDER /coredns/user/group /coredns/user/passwd /etc/
 
-EXPOSE 53/udp 443 853
+EXPOSE 53/tcp 53/udp 443/tcp 853/tcp
 
 USER coredns
 
