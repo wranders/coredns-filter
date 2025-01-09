@@ -6,7 +6,7 @@ ARG COREDNS_VERSION=v1.12.0
 
 #===============================================================================
 
-FROM --platform=$BUILDPLATFORM registry.fedoraproject.org/fedora:${FEDORA_VERSION} as BUILDER
+FROM --platform=$BUILDPLATFORM registry.fedoraproject.org/fedora:${FEDORA_VERSION} AS builder
 
 RUN dnf install -y --setopt=install_weak_deps=False --no-docs \
     ca-certificates git make
@@ -48,14 +48,14 @@ LABEL org.opencontainers.image.source="https://github.com/wranders/coredns-filte
     org.opencontainers.image.description="Sinkholing in CoreDNS" \
     org.opencontainers.image.licenses="MIT"
 
-COPY --from=BUILDER /coredns/coredns /
+COPY --from=builder /coredns/coredns /
 
-COPY --from=BUILDER /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
+COPY --from=builder /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     /etc/ssl/certs/ca-certificates.crt
 
-COPY --from=BUILDER /sbin/nologin /sbin/
+COPY --from=builder /sbin/nologin /sbin/
 
-COPY --from=BUILDER /coredns/user/group /coredns/user/passwd /etc/
+COPY --from=builder /coredns/user/group /coredns/user/passwd /etc/
 
 EXPOSE 53/tcp 53/udp 443/tcp 853/tcp
 
