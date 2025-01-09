@@ -1,3 +1,4 @@
+ARG FEDORA_VERSION=41
 # Go version used by Coredns
 ARG GO_VERSION=1.23.3
 # Coredns version used by coredns-filter
@@ -5,9 +6,9 @@ ARG COREDNS_VERSION=v1.12.0
 
 #===============================================================================
 
-FROM --platform=$BUILDPLATFORM registry.fedoraproject.org/fedora:37 as BUILDER
+FROM --platform=$BUILDPLATFORM registry.fedoraproject.org/fedora:${FEDORA_VERSION} as BUILDER
 
-RUN dnf install -y --setopt=install_weak_deps=False --nodocs \
+RUN dnf install -y --setopt=install_weak_deps=False --no-docs \
     ca-certificates git make
 
 ARG BUILDARCH GO_VERSION
