@@ -4,54 +4,332 @@ name: Build Container
 on:
   push:
     tags:
-    - "v*"
-  workflow_dispatch:
+      - "v*"
+    workflow_dispatch:
+
+################################################################################
+
 jobs:
+
+  ##############################################################################
+
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - arch: linux/amd64
+            runner: ubuntu-24.04
+          - arch: linux/arm64
+            runner: ubuntu-24.04-arm
+          - arch: linux/arm/v7
+            runner: ubuntu-24.04-arm
+          - arch: linux/arm/v6
+            runner: ubuntu-24.04-arm
+    name: Build Container (${{ matrix.target.arch }})
+    runs-on: ${{ matrix.target.runner }}
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
     steps:
 
-    - uses: actions/checkout@v4
+      #=========================================================================
+      - name: Checkout
+        uses: actions/checkout@v6
 
-    - id: get-tags
-      run: |
-        TAGS=(
-          "ghcr.io/wranders/coredns-filter:latest"
-          "quay.io/wranders/coredns-filter:latest"
-        )
-        if [[ $GITHUB_REF_TYPE == 'tag' ]]; then
-          VERSION=$(echo "${GITHUB_REF_NAME}" | sed 's/v*//')
-          TAGS+=(
-            "ghcr.io/wranders/coredns-filter:${VERSION}"
-            "quay.io/wranders/coredns-filter:${VERSION}"
+      #=========================================================================
+      - name: Login to GHCR
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 #v4.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      #=========================================================================
+      - name: Login to Quay
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 #v4.0.0
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_TOKEN }}
+
+      #=========================================================================
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd #v4.0.0
+
+      #=========================================================================
+      - name: Setup Cosign
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 #v4.1.1
+        with:
+          cosign-release: v3.0.5
+
+      #=========================================================================
+      - name: Build and Push by Digest
+        id: build
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 #v7.0.0
+        with:
+          platforms: ${{ matrix.target.arch }}
+          file: Containerfile
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/coredns-filter
+            quay.io/${{ github.repository_owner }}/coredns-filter
+          outputs: type=image,push-by-digest=true,name-canonical=true,push=true
+          sbom: false
+          provenance: false
+
+      #=========================================================================
+      - name: Export Sanitized Platform
+        id: platform
+        run: |
+          platform=${{ matrix.target.arch }}
+          echo "platform=${platform//\//-}" >> $GITHUB_OUTPUT
+
+      #=========================================================================
+      - name: Export Image References
+        id: images
+        run: |
+          ghcr="ghcr.io/${{ github.repository_owner }}/coredns-filter"
+          echo "ghcr=${ghcr}" >> $GITHUB_OUTPUT
+          echo "ghcr_digest=${ghcr}@${{ steps.build.outputs.digest }}" >> $GITHUB_OUTPUT
+          quay="quay.io/${{ github.repository_owner }}/coredns-filter"
+          echo "quay=${quay}" >> $GITHUB_OUTPUT
+          echo "quay_digest=${quay}@${{ steps.build.outputs.digest }}" >> $GITHUB_OUTPUT
+
+      #=========================================================================
+      - name: Ensure Clean Image
+        env:
+          QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+          QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cosign login ghcr.io -u "${{ github.actor }}" -p "$GH_TOKEN"
+          cosign login quay.io -u "$QUAY_USERNAME" -p "$QUAY_TOKEN"
+          cosign clean --force "${{ steps.images.outputs.ghcr_digest }}"
+          cosign clean --force "${{ steps.images.outputs.quay_digest }}"
+
+      #=========================================================================
+      - name: Generate GHCR SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 #v0.24.0
+        with:
+          image: "${{ steps.images.outputs.ghcr_digest }}"
+          format: spdx-json
+          output-file: ${{ runner.temp }}/sbom-ghcr-${{ steps.platform.outputs.platform }}.spdx.json
+          upload-artifact: false
+
+      #=========================================================================
+      - name: Attest GHCR SBOM
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cosign login ghcr.io -u "${{ github.actor }}" -p "$GH_TOKEN"
+          cosign attest --yes \
+            --key=env://COSIGN_PRIVATE_KEY \
+            --type=spdxjson \
+            --predicate="${{ runner.temp }}/sbom-ghcr-${{ steps.platform.outputs.platform }}.spdx.json" \
+            "${{ steps.images.outputs.ghcr_digest }}"
+
+      #=========================================================================
+      - name: Generate GHCR Provenance
+        uses: actions/attest-build-provenance@v3
+        id: attest-ghcr
+        with:
+          subject-name: ${{ steps.images.outputs.ghcr }}
+          subject-digest: ${{ steps.images.outputs.ghcr_digest }}
+
+      #=========================================================================
+      - name: Attach GHCR Provenance
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cosign login ghcr.io -u "${{ github.actor }}" -p "$GH_TOKEN"
+          cosign attach-signature \
+            --attestation="${{ steps.attest-ghcr.outputs.bundle-path }}" \
+            "${{ steps.images.outputs.ghcr_digest }}"
+
+      #=========================================================================
+      - name: Generate Quay SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 #v0.24.0
+        with:
+          image: "${{ steps.images.outputs.quay_digest }}"
+          format: spdx-json
+          output-file: ${{ runner.temp }}/sbom-quay-${{ steps.platform.outputs.platform }}.spdx.json
+          upload-artifact: false
+
+      #=========================================================================
+      - name: Attest Quay SBOM
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+          QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
+        run: |
+          cosign login quay.io -u "$QUAY_USERNAME" -p "$QUAY_TOKEN"
+          cosign attest --yes \
+            --key=env://COSIGN_PRIVATE_KEY \
+            --type=spdxjson \
+            --predicate="${{ runner.temp }}/sbom-quay-${{ steps.platform.outputs.platform }}.spdx.json" \
+            "${{ steps.images.outputs.quay_digest }}"
+
+      #=========================================================================
+      - name: Generate Quay Provenance
+        uses: actions/attest-build-provenance@v3
+        id: attest-quay
+        with:
+          subject-name: ${{ steps.images.outputs.quay }}
+          subject-digest: ${{ steps.images.outputs.quay_digest }}
+
+      #=========================================================================
+      - name: Attach Quay Provenance
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+          QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
+        run: |
+          cosign login quay.io -u "$QUAY_USERNAME" -p "$QUAY_TOKEN"
+          cosign attach-signature \
+            --attestation="${{ steps.attest-quay.outputs.bundle-path }}" \
+            "${{ steps.images.outputs.quay_digest }}"
+
+      #=========================================================================
+      - name: Attest and Sign Platform Manifest with Cosign
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+          QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
+        run: |
+          cosign login ghcr.io -u "${{ github.actor }}" -p "$GH_TOKEN"
+          cosign login quay.io -u "$QUAY_USERNAME" -p "$QUAY_TOKEN"
+          cosign sign --yes \
+            --key=env://COSIGN_PRIVATE_KEY \
+            "${{ steps.images.outputs.ghcr_digest }}" \
+            "${{ steps.images.outputs.quay_digest }}"
+
+      #=========================================================================
+      - name: Export Digest
+        id: digest
+        run: |
+          mkdir -p ${{ runner.temp }}/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      #=========================================================================
+      - name: Upload Digest
+        uses: actions/upload-artifact@v7
+        with:
+          name: digests_coredns-filter_${{ steps.platform.outputs.platform }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  ##############################################################################
+
+  merge_sign_platform_containers:
+    name: Merge and Sign Platform Containers
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      packages: write
+      attestations: write
+      id-token: write
+    steps:
+
+      #=========================================================================
+      - name: Download Digests
+        uses: actions/download-artifact@v8
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests_coredns-filter_*
+          merge-multiple: true
+
+      #=========================================================================
+      - name: Login to GHCR
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 #v4.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      #=========================================================================
+      - name: Login to Quay
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 #v4.0.0
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_TOKEN }}
+
+      #=========================================================================
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd #v4.0.0
+
+      #=========================================================================
+      - name: Setup Cosign
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 #v4.1.1
+        with:
+          cosign-release: v3.0.5
+
+      #=========================================================================
+      - name: Set Tag Name
+        id: tag-name
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "name=$(date -u '+%Y%m%d%H%M%SZ')" >> $GITHUB_OUTPUT
+          else
+            echo "name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      #=========================================================================
+      - name: Docker Metadata
+        id: meta
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf #v6.0.0
+        with:
+          images: |
+            ghcr.io/${{ github.repository_owner }}/coredns-filter
+            quay.io/${{ github.repository_owner }}/coredns-filter
+          tags: |
+            type=raw,latest
+            type=raw,${{ steps.tag-name.outputs.name }}
+
+      #=========================================================================
+      - name: Create Manifest List and Push
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.meta.outputs.json }}") \
+            $(printf 'ghcr.io/${{ github.repository_owner }}/coredns-filter@sha256:%s ' *) \
+            $(printf 'quay.io/${{ github.repository_owner }}/coredns-filter@sha256:%s ' *)
+
+      #=========================================================================
+      - name: Sign Manifest
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+          QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
+        run: |
+          cosign login ghcr.io -u "${{ github.actor }}" -p "$GHCR_TOKEN"
+          cosign login quay.io -u "$QUAY_USER" -p "$QUAY_TOKEN"
+          images=""
+          for image in $(tr '\n' ' ' <<< "${{ steps.meta.outputs.tags }}"); do
+            images+="$(skopeo inspect --format='{{.Name}}@{{.Digest}}' docker://$image) "
+          done
+          images=$(
+            echo $images | tr ' ' '\n' | sed 's/\//:/' | \
+            sort -u -t':' -k1,1 -k3,3 | sed 's/:/\//' | tr '\n' ' ' | \
+            awk '{$1=$1};1'
           )
-        fi
-        TAGSCSV=$(printf '%s,' "${TAGS[@]}")
-        echo "tags=${TAGSCSV:0:-1}" >> $GITHUB_OUTPUT
-
-    - uses: docker/setup-qemu-action@v3
-      with:
-        platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
-
-    - uses: docker/setup-buildx-action@v3
-      id: buildx
-
-    - uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    
-    - uses: docker/login-action@v3
-      with:
-        registry: quay.io
-        username: ${{ secrets.QUAY_USERNAME }}
-        password: ${{ secrets.QUAY_TOKEN }}
-    
-    - uses: docker/build-push-action@v6
-      with:
-        builder: ${{ steps.buildx.outputs.name }}
-        file: Containerfile
-        platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6
-        push: true
-        tags: ${{ steps.get-tags.outputs.tags }}
+          for image in $(tr ' ' '\n' <<< "$images"); do
+            cosign clean --force "$image"
+            cosign sign --yes --recursive \
+              --key=env://COSIGN_PRIVATE_KEY \
+              "$image"
+          done
