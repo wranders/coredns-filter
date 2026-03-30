@@ -138,7 +138,7 @@ jobs:
         id: attest-ghcr
         with:
           subject-name: ${{ steps.images.outputs.ghcr }}
-          subject-digest: ${{ steps.images.outputs.ghcr_digest }}
+          subject-digest: ${{ steps.build.outputs.digest }}
 
       #=========================================================================
       - name: Attach GHCR Provenance
@@ -182,7 +182,7 @@ jobs:
         id: attest-quay
         with:
           subject-name: ${{ steps.images.outputs.quay }}
-          subject-digest: ${{ steps.images.outputs.quay_digest }}
+          subject-digest: ${{ steps.build.outputs.digest }}
 
       #=========================================================================
       - name: Attach Quay Provenance
