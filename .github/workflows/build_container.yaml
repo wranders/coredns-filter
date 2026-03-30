@@ -148,7 +148,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cosign login ghcr.io -u "${{ github.actor }}" -p "$GH_TOKEN"
-          cosign attach-signature \
+          cosign attach attestation \
             --attestation="${{ steps.attest-ghcr.outputs.bundle-path }}" \
             "${{ steps.images.outputs.ghcr_digest }}"
 
@@ -193,7 +193,7 @@ jobs:
           QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
         run: |
           cosign login quay.io -u "$QUAY_USERNAME" -p "$QUAY_TOKEN"
-          cosign attach-signature \
+          cosign attach attestation \
             --attestation="${{ steps.attest-quay.outputs.bundle-path }}" \
             "${{ steps.images.outputs.quay_digest }}"
 
