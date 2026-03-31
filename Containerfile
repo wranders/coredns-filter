@@ -1,7 +1,5 @@
 ARG FEDORA_VERSION=41
-# Go version used by Coredns
 ARG GO_VERSION=1.23.3
-# Coredns version used by coredns-filter
 ARG COREDNS_VERSION=v1.12.0
 
 #===============================================================================
