@@ -12,7 +12,7 @@ RUN dnf install -y --setopt=install_weak_deps=False --no-docs \
 ARG BUILDARCH GO_VERSION
 RUN curl -L https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz | \
     tar -C /usr/local -zx
-ENV PATH /usr/local/go/bin:$PATH
+ENV PATH=/usr/local/go/bin:$PATH
 
 ARG COREDNS_VERSION
 RUN git clone --depth 1 --branch ${COREDNS_VERSION} \
