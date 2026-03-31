@@ -9,9 +9,12 @@ RUN dnf install -y --setopt=install_weak_deps=False --no-docs \
     make \
     util-linux
 
+ARG TARGETARCH
 RUN { \
       GO_VERSION=$(curl -s 'https://go.dev/VERSION?m=text' | sed -ne 's/^go//p'); \
-      curl -# -L https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz | \
+      GO_ARCH=$TARGETARCH; \
+      if [[ "$TARGETARCH" == "arm" ]]; then GO_ARCH="arm64"; fi; \
+      curl -# -L https://go.dev/dl/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz | \
         tar -C /usr/local -zx; \
     }
 ENV PATH=/usr/local/go/bin:$PATH
