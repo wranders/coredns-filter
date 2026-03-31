@@ -1,5 +1,4 @@
 ARG FEDORA_VERSION=41
-ARG GO_VERSION=1.23.3
 ARG COREDNS_VERSION=v1.12.0
 
 #===============================================================================
@@ -9,9 +8,11 @@ FROM quay.io/fedora/fedora:${FEDORA_VERSION} AS builder
 RUN dnf install -y --setopt=install_weak_deps=False --no-docs \
     ca-certificates git make
 
-ARG GO_VERSION
-RUN curl -L https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz | \
-    tar -C /usr/local -zx
+RUN { \
+      GO_VERSION=$(curl -s 'https://go.dev/VERSION?m=text' | sed -ne 's/^go//p'); \
+      curl -# -L https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz | \
+        tar -C /usr/local -zx; \
+    }
 ENV PATH=/usr/local/go/bin:$PATH
 
 ARG COREDNS_VERSION
