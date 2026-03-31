@@ -303,7 +303,7 @@ jobs:
         working-directory: ${{ runner.temp }}/digests
         run: |
           docker buildx imagetools create \
-            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "${{ steps.meta.outputs.json }}") \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< '${{ steps.meta.outputs.json }}') \
             $(printf 'ghcr.io/${{ github.repository_owner }}/coredns-filter@sha256:%s ' *) \
             $(printf 'quay.io/${{ github.repository_owner }}/coredns-filter@sha256:%s ' *)
 
@@ -319,7 +319,7 @@ jobs:
           cosign login ghcr.io -u "${{ github.actor }}" -p "$GHCR_TOKEN"
           cosign login quay.io -u "$QUAY_USER" -p "$QUAY_TOKEN"
           images=""
-          for image in $(tr '\n' ' ' <<< "${{ steps.meta.outputs.tags }}"); do
+          for image in $(tr '\n' ' ' <<< '${{ steps.meta.outputs.tags }}'); do
             images+="$(skopeo inspect --format='{{.Name}}@{{.Digest}}' docker://$image) "
           done
           images=$(
