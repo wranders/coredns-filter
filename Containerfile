@@ -4,7 +4,7 @@ ARG COREDNS_VERSION=v1.12.0
 
 #===============================================================================
 
-FROM registry.fedoraproject.org/fedora:${FEDORA_VERSION} AS builder
+FROM quay.io/fedora/fedora:${FEDORA_VERSION} AS builder
 
 RUN dnf install -y --setopt=install_weak_deps=False --no-docs \
     ca-certificates git make
