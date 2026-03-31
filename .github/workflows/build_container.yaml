@@ -102,9 +102,10 @@ jobs:
         env:
           QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
           QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
-          GH_TOKEN: ${{ github.token }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ github.token }}
         run: |
-          cosign login ghcr.io -u "${{ github.actor }}" -p "$GH_TOKEN"
+          cosign login ghcr.io -u "$GHCR_USERNAME" -p "$GHCR_TOKEN"
           cosign login quay.io -u "$QUAY_USERNAME" -p "$QUAY_TOKEN"
           cosign clean --force "${{ steps.images.outputs.ghcr_digest }}"
           cosign clean --force "${{ steps.images.outputs.quay_digest }}"
@@ -123,9 +124,10 @@ jobs:
         env:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          GH_TOKEN: ${{ github.token }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ github.token }}
         run: |
-          cosign login ghcr.io -u "${{ github.actor }}" -p "$GH_TOKEN"
+          cosign login ghcr.io -u "$GHCR_USERNAME" -p "$GHCR_TOKEN"
           cosign attest --yes \
             --key=env://COSIGN_PRIVATE_KEY \
             --type=spdxjson \
@@ -145,9 +147,10 @@ jobs:
         env:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          GH_TOKEN: ${{ github.token }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ github.token }}
         run: |
-          cosign login ghcr.io -u "${{ github.actor }}" -p "$GH_TOKEN"
+          cosign login ghcr.io -u "$GHCR_USERNAME" -p "$GHCR_TOKEN"
           cosign attach attestation \
             --attestation="${{ steps.attest-ghcr.outputs.bundle-path }}" \
             "${{ steps.images.outputs.ghcr_digest }}"
@@ -202,11 +205,12 @@ jobs:
         env:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          GH_TOKEN: ${{ github.token }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ github.token }}
           QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
           QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
         run: |
-          cosign login ghcr.io -u "${{ github.actor }}" -p "$GH_TOKEN"
+          cosign login ghcr.io -u "$GHCR_USERNAME" -p "$GHCR_TOKEN"
           cosign login quay.io -u "$QUAY_USERNAME" -p "$QUAY_TOKEN"
           cosign sign --yes \
             --key=env://COSIGN_PRIVATE_KEY \
@@ -312,11 +316,12 @@ jobs:
         env:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          GH_TOKEN: ${{ github.token }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ github.token }}
           QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
           QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
         run: |
-          cosign login ghcr.io -u "${{ github.actor }}" -p "$GHCR_TOKEN"
+          cosign login ghcr.io -u "$GHCR_USERNAME" -p "$GHCR_TOKEN"
           cosign login quay.io -u "$QUAY_USER" -p "$QUAY_TOKEN"
           images=""
           for image in $(tr '\n' ' ' <<< '${{ steps.meta.outputs.tags }}'); do
