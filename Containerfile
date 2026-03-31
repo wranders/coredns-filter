@@ -1,4 +1,4 @@
-ARG FEDORA_VERSION=41
+ARG FEDORA_VERSION="43"
 ARG COREDNS_VERSION=v1.12.0
 
 #===============================================================================
