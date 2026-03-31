@@ -1,12 +1,12 @@
 ARG FEDORA_VERSION="43"
-ARG COREDNS_VERSION=v1.12.0
+ARG COREDNS_VERSION="1.12.0"
 
 #===============================================================================
 
 FROM quay.io/fedora/fedora:${FEDORA_VERSION} AS builder
 
 RUN dnf install -y --setopt=install_weak_deps=False --no-docs \
-    ca-certificates git make
+    ca-certificates make
 
 RUN { \
       GO_VERSION=$(curl -s 'https://go.dev/VERSION?m=text' | sed -ne 's/^go//p'); \
@@ -16,8 +16,9 @@ RUN { \
 ENV PATH=/usr/local/go/bin:$PATH
 
 ARG COREDNS_VERSION
-RUN git clone --depth 1 --branch ${COREDNS_VERSION} \
-    https://github.com/coredns/coredns.git /coredns
+RUN mkdir /coredns && \
+    curl -# -L https://github.com/coredns/coredns/archive/refs/tags/v${COREDNS_VERSION}.tar.gz \
+    | tar -C /coredns -zx --strip-components=1
 
 WORKDIR /coredns/
 
