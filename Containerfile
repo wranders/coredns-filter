@@ -6,7 +6,7 @@ ARG COREDNS_VERSION="1.12.0"
 FROM quay.io/fedora/fedora:${FEDORA_VERSION} AS builder
 
 RUN dnf install -y --setopt=install_weak_deps=False --no-docs \
-    ca-certificates make
+    make
 
 RUN { \
       GO_VERSION=$(curl -s 'https://go.dev/VERSION?m=text' | sed -ne 's/^go//p'); \
