@@ -45,11 +45,11 @@ RUN setcap 'cap_net_bind_service=+ep' coredns
 
 FROM scratch
 
-LABEL org.opencontainers.image.source="https://github.com/wranders/coredns-filter" \
-    org.opencontainers.image.authors="W Anders <w@doubleu.codes>" \
-    org.opencontainers.image.title="coredns-filter" \
-    org.opencontainers.image.description="Sinkholing in CoreDNS" \
-    org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.source="https://github.com/wranders/coredns-filter"
+LABEL org.opencontainers.image.authors="W Anders <w@doubleu.codes>"
+LABEL org.opencontainers.image.title="coredns-filter"
+LABEL org.opencontainers.image.description="Sinkholing in CoreDNS"
+LABEL org.opencontainers.image.licenses="MIT"
 
 COPY --from=builder /scratch /
 
