@@ -4,13 +4,13 @@ ARG COREDNS_VERSION=v1.12.0
 
 #===============================================================================
 
-FROM --platform=$BUILDPLATFORM registry.fedoraproject.org/fedora:${FEDORA_VERSION} AS builder
+FROM registry.fedoraproject.org/fedora:${FEDORA_VERSION} AS builder
 
 RUN dnf install -y --setopt=install_weak_deps=False --no-docs \
     ca-certificates git make
 
-ARG BUILDARCH GO_VERSION
-RUN curl -L https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz | \
+ARG GO_VERSION
+RUN curl -L https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz | \
     tar -C /usr/local -zx
 ENV PATH=/usr/local/go/bin:$PATH
 
@@ -24,8 +24,7 @@ RUN go get github.com/wranders/coredns-filter
 
 RUN sed -i '/^cache:cache/i filter:github.com/wranders/coredns-filter' plugin.cfg
 
-ARG TARGETOS TARGETARCH
-RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} make
+RUN make
 
 RUN useradd coredns --no-log-init -U -M -s /sbin/nologin
 RUN chown coredns:coredns coredns
@@ -38,7 +37,7 @@ RUN mkdir user && \
 
 #===============================================================================
 
-FROM --platform=$TARGETPLATFORM scratch
+FROM scratch
 
 LABEL org.opencontainers.image.source="https://github.com/wranders/coredns-filter" \
     org.opencontainers.image.authors="W Anders <w@doubleu.codes>" \
