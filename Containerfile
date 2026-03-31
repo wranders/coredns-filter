@@ -30,7 +30,11 @@ RUN go get github.com/wranders/coredns-filter
 
 RUN sed -i '/^cache:cache/i filter:github.com/wranders/coredns-filter' plugin.cfg
 
-RUN make
+ARG TARGETARCH
+ARG TARGETVARIANT
+RUN export GOARCH=$TARGETARCH; \
+    export GOARM=$(echo "$TARGETVARIANT" | sed -ne 's/^v//p'); \
+    make
 
 RUN mkdir -p /scratch/etc/ && \
     touch /scratch/etc/{passwd,group} && \
