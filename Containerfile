@@ -29,14 +29,17 @@ RUN sed -i '/^cache:cache/i filter:github.com/wranders/coredns-filter' plugin.cf
 
 RUN make
 
-RUN useradd coredns --no-log-init -U -M -s /sbin/nologin
-RUN chown coredns:coredns coredns
+RUN mkdir -p /scratch/etc/ && \
+    touch /scratch/etc/{passwd,group} && \
+    useradd coredns \
+      --prefix=/scratch \
+      --no-log-init \
+      --system \
+      --user-group \
+      --no-create-home \
+      --shell=/sbin/nologin
+
 RUN setcap 'cap_net_bind_service=+ep' coredns
-RUN mkdir user && \
-    echo $(grep coredns /etc/group) > user/group && \
-    echo $(grep coredns /etc/passwd) > user/passwd && \
-    chown root:root user/{group,passwd} && \
-    chmod 0644 user/{group,passwd}
 
 #===============================================================================
 
@@ -48,14 +51,14 @@ LABEL org.opencontainers.image.source="https://github.com/wranders/coredns-filte
     org.opencontainers.image.description="Sinkholing in CoreDNS" \
     org.opencontainers.image.licenses="MIT"
 
+COPY --from=builder /scratch /
+
 COPY --from=builder /coredns/coredns /
 
 COPY --from=builder /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem \
     /etc/ssl/certs/ca-certificates.crt
 
 COPY --from=builder /sbin/nologin /sbin/
-
-COPY --from=builder /coredns/user/group /coredns/user/passwd /etc/
 
 EXPOSE 53/tcp 53/udp 443/tcp 853/tcp
 
