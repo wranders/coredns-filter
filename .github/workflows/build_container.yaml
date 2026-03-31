@@ -322,7 +322,7 @@ jobs:
           QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
         run: |
           cosign login ghcr.io -u "$GHCR_USERNAME" -p "$GHCR_TOKEN"
-          cosign login quay.io -u "$QUAY_USER" -p "$QUAY_TOKEN"
+          cosign login quay.io -u "$QUAY_USERNAME" -p "$QUAY_TOKEN"
           images=""
           for image in $(tr '\n' ' ' <<< '${{ steps.meta.outputs.tags }}'); do
             images+="$(skopeo inspect --format='{{.Name}}@{{.Digest}}' docker://$image) "
