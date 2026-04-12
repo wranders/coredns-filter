@@ -3,7 +3,8 @@ ARG COREDNS_VERSION="1.14.2"
 
 #===============================================================================
 
-FROM quay.io/fedora/fedora:${FEDORA_VERSION} AS builder
+ARG BUILDPLATFORM
+FROM --platform=$BUILDPLATFORM quay.io/fedora/fedora:${FEDORA_VERSION} AS builder
 
 RUN dnf install -y --setopt=install_weak_deps=False --no-docs \
     make \
