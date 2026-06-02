@@ -26,12 +26,12 @@ type Filter struct {
 	allowConfig    ActionConfig
 	allowDomains   map[string]bool
 	allowRegex     []*regexp.Regexp
-	allowWildcards []string
+	allowWildcards map[string]bool
 
 	blockConfig    ActionConfig
 	blockDomains   map[string]bool
 	blockRegex     []*regexp.Regexp
-	blockWildcards []string
+	blockWildcards map[string]bool
 
 	response Response
 
@@ -45,11 +45,11 @@ func newFilter() *Filter {
 		allowConfig:    NewActionConfig(ActionTypeAllow),
 		allowDomains:   make(map[string]bool),
 		allowRegex:     make([]*regexp.Regexp, 0),
-		allowWildcards: make([]string, 0),
+		allowWildcards: make(map[string]bool),
 		blockConfig:    NewActionConfig(ActionTypeBlock),
 		blockDomains:   make(map[string]bool),
 		blockRegex:     make([]*regexp.Regexp, 0),
-		blockWildcards: make([]string, 0),
+		blockWildcards: make(map[string]bool),
 		response: RespAddress{
 			IP4: netip.IPv4Unspecified(),
 			IP6: netip.IPv6Unspecified(),
@@ -102,16 +102,15 @@ func (f *Filter) isAllowed(qname string) bool {
 		return true
 	}
 
+	if wildcard, ok := matchesAnyWildcard(qname, f.allowWildcards); ok {
+		log.Debugf("request %q matched allow wildcard %q", qname, wildcard)
+		return true
+	}
+
+	// Evaluate regular expressions last, as they're the most expensive
 	for _, exp := range f.allowRegex {
 		if exp.MatchString(qname) {
 			log.Debugf("request %q mached allow regex", qname)
-			return true
-		}
-	}
-
-	for _, wildcard := range f.allowWildcards {
-		if qname == wildcard || strings.HasSuffix(qname, "."+wildcard) {
-			log.Debugf("request %q matched allow wildcard %q", qname, wildcard)
 			return true
 		}
 	}
@@ -125,6 +124,12 @@ func (f *Filter) isBlocked(qname string) bool {
 		return true
 	}
 
+	if wildcard, ok := matchesAnyWildcard(qname, f.blockWildcards); ok {
+		log.Debugf("request %q matched block wildcard %q", qname, wildcard)
+		return true
+	}
+
+	// Evaluate regular expressions last, as they're the most expensive
 	for _, exp := range f.blockRegex {
 		if exp.MatchString(qname) {
 			log.Debugf("request %q matched block regex", qname)
@@ -132,14 +137,25 @@ func (f *Filter) isBlocked(qname string) bool {
 		}
 	}
 
-	for _, wildcard := range f.blockWildcards {
-		if qname == wildcard || strings.HasSuffix(qname, "."+wildcard) {
-			log.Debugf("request %q matched block wildcard %q", qname, wildcard)
-			return true
-		}
+	return false
+}
+
+func matchesAnyWildcard(qname string, wildcards map[string]bool) (string, bool) {
+	if wildcards[qname] {
+		return qname, true
 	}
 
-	return false
+	// Wildcards only match at subdomain boundaries. Test the qname with each
+	// subdomain removed until we either match or run out of subdomains.
+	for i, c := range qname {
+		if c == '.' {
+			wildcard := qname[i+1:]
+			if wildcards[wildcard] {
+				return wildcard, true
+			}
+		}
+	}
+	return "", false
 }
 
 // OnShutdown cleans up the filter and prepares it for removal
@@ -169,13 +185,11 @@ func (f *Filter) Build() {
 	f.blockConfig.BuildRegExps(blockRegexBuilder)
 	blockRegex := f.consolidateRegex(blockRegexBuilder)
 
-	var allowWildcardBuilder = make(map[string]bool)
-	f.allowConfig.BuildWildcards(allowWildcardBuilder)
-	allowWildcards := f.consolidateWildcards(allowWildcardBuilder)
+	var allowWildcards = make(map[string]bool)
+	f.allowConfig.BuildWildcards(allowWildcards)
 
-	var blockWildcardBuilder = make(map[string]bool)
-	f.blockConfig.BuildWildcards(blockWildcardBuilder)
-	blockWildcards := f.consolidateWildcards(blockWildcardBuilder)
+	var blockWildcards = make(map[string]bool)
+	f.blockConfig.BuildWildcards(blockWildcards)
 
 	f.Lock()
 	f.allowDomains = allowDomains
@@ -203,14 +217,6 @@ func (f *Filter) consolidateRegex(regexes map[string]*regexp.Regexp) []*regexp.R
 	out := make([]*regexp.Regexp, 0, len(regexes))
 	for _, expr := range regexes {
 		out = append(out, expr)
-	}
-	return out
-}
-
-func (f *Filter) consolidateWildcards(wildcards map[string]bool) []string {
-	out := make([]string, 0, len(wildcards))
-	for wildcard := range wildcards {
-		out = append(out, wildcard)
 	}
 	return out
 }
