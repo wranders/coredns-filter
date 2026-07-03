@@ -27,16 +27,22 @@ func (a ActionConfig) GetListLoader(uri string) (ListLoader, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid list URL %q; %w", uri, err)
 	}
-	if len(listUrl.Scheme) == 0 || len(listUrl.Host) == 0 {
-		// URL parsing ambiguity means Parse does not always return an error
-		// with an invalid URL. Explicitly check that the Scheme and Host are
-		// non-zero values so that they will be usable later.
-		return nil, fmt.Errorf("invalid list URL %q; scheme or host empty", uri)
+
+	// url.Parse does not require that the URL has a schema. Explicitly check
+	// for a scheme so that we know which loader to use.
+	if len(listUrl.Scheme) == 0 {
+		return nil, fmt.Errorf("invalid list URL %q; scheme empty", uri)
 	}
+
 	switch listUrl.Scheme {
 	case "file":
 		return a.FileLoader, nil
 	case "http", "https":
+		// url.Parse does not require that the URL has a host. Explicitly check
+		// for a host for network schemes only.
+		if len(listUrl.Host) == 0 {
+			return nil, fmt.Errorf("invalid list URL %q; host empty", uri)
+		}
 		return a.HTTPLoader, nil
 	default:
 		return nil, fmt.Errorf(
