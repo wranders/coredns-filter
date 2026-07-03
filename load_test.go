@@ -2,6 +2,9 @@ package filter
 
 import (
 	"net/http"
+	"os"
+	"path"
+	"path/filepath"
 	"testing"
 )
 
@@ -36,7 +39,22 @@ func TestLoadNonExistant(t *testing.T) {
 		true,
 	}
 	RunFilterBuildTest(t, test)
+}
 
+func TestLoadAbsoluteFile(t *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("error getting working directory: %v", err)
+	}
+
+	test := TestFilterBuild{
+		"check absolute file path",
+		`filter {
+				allow list domain file://` + path.Join(filepath.ToSlash(cwd), ".testdata/empty.list") + `
+			}`,
+		true,
+	}
+	RunFilterBuildTest(t, test)
 }
 
 func TestLoadNonExistantExternal(t *testing.T) {
