@@ -1,5 +1,5 @@
-ARG FEDORA_VERSION="43"
-ARG COREDNS_VERSION="1.14.2"
+ARG FEDORA_VERSION="44"
+ARG COREDNS_VERSION="1.14.7"
 
 #===============================================================================
 
