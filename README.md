@@ -3,11 +3,11 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/wranders/coredns-filter.svg)](https://pkg.go.dev/github.com/wranders/coredns-filter)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=wranders_coredns-filter&metric=coverage)](https://sonarcloud.io/summary/overall?id=wranders_coredns-filter)
 
-*filter* - provides domain blocking functionality
+*filter* – provides domain blocking functionality
 
 ## Description
 
-The *filter* plugin is used to block domain name resolution, simliar to
+The *filter* plugin is used to block domain name resolution, similar to
 [Pi-hole®](https://github.com/pi-hole/pi-hole).
 
 ## Syntax
@@ -80,20 +80,20 @@ filter {
 ```
 
 * **RESOLVER**: a resolver IP address to use when fetching remote lists. `dns`
-and `tls` schemes are accepted. Ports may be specified. IPv6 address are
+and `tls` schemes are accepted. Ports may be specified. IPv6 addresses are
 accepted when used with a scheme and port. Since `listresolver` is intended to
 be used when no other resolvers are available, only IP addresses are accepted.
-* **SERVER_NAME**: Only used when resolver scheme is `tls`. Must be the host
+* **SERVER_NAME**: Only used when the resolver scheme is `tls`. Must be the host
 name of the resolver, otherwise resolving will fail due to being unable to
 verify the resolver's certificate.
 
 ## Domain Matching
 
-| Directive                         | Description
-| :-                                | :-
-| `block domain example.com`        | block requests to `example.com` but allow `sub.example.com`
-| `block regex .*.example.com`      | block all subdomains of `example.com` but allow requests to `example.com`
-| `block wildcard *.example.com`    | block requests to `example.com` and all subdomains
+| Directive                      | Description                                                               |
+|:-------------------------------|:--------------------------------------------------------------------------|
+| `block domain example.com`     | block requests to `example.com` but allow `sub.example.com`               |
+| `block regex .*.example.com`   | block all subdomains of `example.com` but allow requests to `example.com` |
+| `block wildcard *.example.com` | block requests to `example.com` and all subdomains                        |
 
 Values for `regex` directives are parsed directly by
 [`regexp.Compile`](https://pkg.go.dev/regexp#Compile), so if you're unfamiliar
@@ -157,7 +157,7 @@ filter {
 ## Building
 
 Clone the [coredns](https://github.com/coredns/coredns) repository and change
-into it's directory.
+into its directory.
 
 ```sh
 git clone https://github.com/coredns/coredns.git
@@ -195,7 +195,7 @@ Build using `make`:
 make
 ```
 
-Or if `make` is not available, simply run:
+Or if `make` is not available, run:
 
 ```sh
 go generate && go build
@@ -220,7 +220,7 @@ CPU architectures include `armv6` and `armv7` (Raspberry Pi), `aarch64`, and
 `x86_64`.
 
 The `coredns` binary is located at the root of the filesystem, so a `Corefile`
-mounted to `/Corefile` will be automatically detected without futher
+mounted to `/Corefile` will be automatically detected without further
 configuration.
 
 Ports `53/udp` (DNS), `443` (DNS-over-HTTPS), and `853` (DNS-over-TLS) are
