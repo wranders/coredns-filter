@@ -345,8 +345,7 @@ func TestSetupExpectedEOL(t *testing.T) {
 		controller := caddy.NewTestController("dns", corefile)
 		err := setup(controller)
 		t.Logf("%s", err)
-		var acceptErr errorExpectedEOL
-		if !errors.As(err, &acceptErr) {
+		if _, ok := errors.AsType[errorExpectedEOL](err); !ok {
 			t.Errorf(
 				"expected eol error type; got %T",
 				err,
