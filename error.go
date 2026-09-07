@@ -3,7 +3,7 @@ package filter
 import "fmt"
 
 type errorExpectedEOL struct {
-	data interface{}
+	data any
 }
 
 func (e errorExpectedEOL) Error() string {
