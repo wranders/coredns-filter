@@ -1,7 +1,6 @@
 package filter
 
 import (
-	"net"
 	"net/netip"
 
 	"github.com/miekg/dns"
@@ -45,11 +44,11 @@ func (r RespAddress) Render(qname string, qtype uint16) RenderedResponse {
 	case dns.TypeA:
 		answer = new(dns.A)
 		answer.(*dns.A).Hdr = header
-		answer.(*dns.A).A = net.IP(r.IP4.AsSlice())
+		answer.(*dns.A).A = r.IP4.AsSlice()
 	case dns.TypeAAAA:
 		answer = new(dns.AAAA)
 		answer.(*dns.AAAA).Hdr = header
-		answer.(*dns.AAAA).AAAA = net.IP(r.IP6.AsSlice())
+		answer.(*dns.AAAA).AAAA = r.IP6.AsSlice()
 	default:
 		return RenderedResponse{dns.RcodeSuccess, false, []dns.RR{}}
 	}
