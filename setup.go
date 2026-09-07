@@ -284,7 +284,7 @@ func parseAddress(rec ...string) (uint16, netip.Addr, error) {
 		}
 		return dns.TypeAAAA, addr, nil
 	}
-	// This shouldn't be reached but it's here just in case something
+	// This shouldn't be reached, but it's here just in case something
 	// catastrophic happens
 	return 0, netip.Addr{}, fmt.Errorf("unknown response address %q", rec[1])
 }

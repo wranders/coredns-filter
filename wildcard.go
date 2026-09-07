@@ -44,7 +44,7 @@ func parseActionListWildcard(c *caddy.Controller, f *Filter, a ActionType) error
 	return ensureEOL(c)
 }
 
-// AddWildcard to match
+// AddWildcard to a match
 func (a ActionConfig) AddWildcard(wildcard string) error {
 	wc := a.cleanWildcardListLine(wildcard)
 	if !DNSNameRegexp.MatchString(wc) {

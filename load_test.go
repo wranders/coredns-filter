@@ -30,9 +30,9 @@ func TestLoadInvalidUrl(t *testing.T) {
 	}
 }
 
-func TestLoadNonExistant(t *testing.T) {
+func TestLoadNonExistent(t *testing.T) {
 	test := TestFilterBuild{
-		"check non existant file",
+		"check non existent file",
 		`filter {
 				allow list domain file://noop
 			}`,
@@ -57,17 +57,17 @@ func TestLoadAbsoluteFile(t *testing.T) {
 	RunFilterBuildTest(t, test)
 }
 
-func TestLoadNonExistantExternal(t *testing.T) {
+func TestLoadNonExistentExternal(t *testing.T) {
 	test := []TestFilterBuild{
 		{
-			"check non existant external resource",
+			"check non existent external resource",
 			`filter {
 				allow list domain http://noop
 			}`,
 			true,
 		},
 		{
-			"check non existant external resource",
+			"check non existent external resource",
 			`filter {
 				allow list domain https://httpbin.org/status/404
 			}`,

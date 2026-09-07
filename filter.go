@@ -65,8 +65,8 @@ func (f *Filter) Name() string {
 	return "filter"
 }
 
-// ServeDNS implements the plugin.Handler inteface
-// Checks whether or not the requested domain is allowed or blocked.
+// ServeDNS implements the plugin.Handler interface
+// Checks whether the requested domain is allowed or blocked.
 // Allowed domains are passed to the next plugin in the Corefile. Blocked
 // domains return the configured response.
 func (f *Filter) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (int, error) {
@@ -110,7 +110,7 @@ func (f *Filter) isAllowed(qname string) bool {
 	// Evaluate regular expressions last, as they're the most expensive
 	for _, exp := range f.allowRegex {
 		if exp.MatchString(qname) {
-			log.Debugf("request %q mached allow regex", qname)
+			log.Debugf("request %q matched allow regex", qname)
 			return true
 		}
 	}

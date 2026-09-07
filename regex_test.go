@@ -57,7 +57,7 @@ func TestRegexAllowBlock(t *testing.T) {
 			false,
 		},
 		{
-			"check implicity allowd safe subdomain",
+			"check implicitly allowed safe subdomain",
 			"safe.sub.example.com",
 			false,
 		},
@@ -98,7 +98,7 @@ func TestRegexListInvalidScheme(t *testing.T) {
 	}
 }
 
-func TestRegexListNonExistant(t *testing.T) {
+func TestRegexListNonExistent(t *testing.T) {
 	tests := []TestFilterBuild{
 		{
 			"check unreachable allow regex list",
@@ -136,7 +136,7 @@ func TestRegexListAllowBlock(t *testing.T) {
 			true,
 		},
 		{
-			"check implicity allowd safe domain",
+			"check implicitly allowed safe domain",
 			"sub.example.net",
 			false,
 		},

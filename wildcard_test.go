@@ -32,7 +32,7 @@ func TestWildcardBlockAllow(t *testing.T) {
 			true,
 		},
 		{
-			"check explicity allowed domain",
+			"check explicitly allowed domain",
 			"safe.example.com",
 			false,
 		},
@@ -69,10 +69,10 @@ func TestWildcardInvalid(t *testing.T) {
 
 func TestWildcardListExternal(t *testing.T) {
 	// fetching the list from the source url works perfectly fine locally, but
-	//   causes Github Actions to error stating:
+	//   causes GitHub Actions to error stating:
 	//   `http: no Client.Transport or DefaultTransport`, as if no RoundTripper
 	//   exists in the default http.Client
-	// this list is added to the included testdata until i can figure out what
+	// this list is added to the included testdata until I can figure out what
 	//   the hell is going on there...
 	//
 	// corefile := `filter {
@@ -156,7 +156,7 @@ func TestWildcardListExternalNotProvided(t *testing.T) {
 	RunSetupTest(t, test)
 }
 
-func TestWildcardListNonExistant(t *testing.T) {
+func TestWildcardListNonExistent(t *testing.T) {
 	test := TestFilterBuild{
 		"check unreachable wildcard list",
 		`filter {

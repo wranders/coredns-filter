@@ -53,7 +53,7 @@ func TestHostsListAllowPrecedence(t *testing.T) {
 	RunFilterTests(t, corefile, tests)
 }
 
-func TestHostsListNonExistant(t *testing.T) {
+func TestHostsListNonExistent(t *testing.T) {
 	tests := []TestFilterBuild{
 		{
 			"check allow invalid external hosts list scheme",

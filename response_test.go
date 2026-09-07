@@ -13,7 +13,7 @@ import (
 func TestResponseInvalid(t *testing.T) {
 	tests := []TestSetup{
 		{
-			"check no respose type",
+			"check no response type",
 			`filter {
 				response
 			}`,

@@ -26,10 +26,10 @@ func (a ActionType) String() string {
 	return actions[a]
 }
 
-// ActionList is list of URLs and the functions required to load them
+// ActionList is a list of URLs and the functions required to load them
 type ActionList map[string]ListLoader
 
-// ActionConfig contains the raw domains, expressions and lists that are
+// ActionConfig contains the raw domains, expressions, and lists that are
 // compiled and used by the Filter
 type ActionConfig struct {
 	configType ActionType
@@ -54,7 +54,7 @@ var DNSNameRegexp = regexp.MustCompile(
 	`^([a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62}){1}(\.[a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62})*[\._]?$`,
 )
 
-// HostsRegexp matches multiple spaces or tabspaces for cleaning up each entry
+// HostsRegexp matches multiple spaces or tab spaces for cleaning up each entry
 var HostsRegexp = regexp.MustCompile(`\s+|\t+`)
 
 // NewActionConfig returns an action ready to accept configurations

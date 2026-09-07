@@ -31,7 +31,7 @@ func TestDomainAllowBlock(t *testing.T) {
 			false,
 		},
 		{
-			"check implicity blocked safe subdomain",
+			"check implicitly blocked safe subdomain",
 			"sub.safe.example.com",
 			true,
 		},
@@ -90,7 +90,7 @@ func TestDomainListAllowPrecedence(t *testing.T) {
 	RunFilterTests(t, corefile, tests)
 }
 
-func TestDomainListNonExistant(t *testing.T) {
+func TestDomainListNonExistent(t *testing.T) {
 	test := TestFilterBuild{
 		"check unreachable domain list",
 		`filter {
