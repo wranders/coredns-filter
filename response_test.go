@@ -34,8 +34,8 @@ func TestResponseInvalid(t *testing.T) {
 			true,
 		},
 	}
-	for _, test := range tests {
-		RunSetupTest(t, test)
+	for _, setupTest := range tests {
+		RunSetupTest(t, setupTest)
 	}
 }
 

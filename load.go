@@ -81,14 +81,14 @@ func (h HTTPListLoader) Load(path string) (io.ReadCloser, error) {
 			d := net.Dialer{
 				Timeout: time.Second * 5,
 			}
-			net, err := h.transportToNetwork(h.Network)
+			transportNet, err := h.transportToNetwork(h.Network)
 			if err != nil {
 				// This shouldn't be reached. See default return in
 				// HTTPListLoader.transportToNetwork
 				return nil, err
 			}
-			conn, err := d.DialContext(ctx, net, h.ResolverIP.String())
-			if net == "tcp" {
+			conn, err := d.DialContext(ctx, transportNet, h.ResolverIP.String())
+			if transportNet == "tcp" {
 				tlsConfig := &tls.Config{
 					ServerName: h.ServerName,
 				}
