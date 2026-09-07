@@ -3,6 +3,7 @@ package filter
 import (
 	"bufio"
 	"bytes"
+	"maps"
 	"regexp"
 
 	"github.com/coredns/caddy"
@@ -69,9 +70,7 @@ func (a ActionConfig) AddRegexList(url string) error {
 // BuildRegExps consolidates individual regular expressions then loads and
 // compiles regular expressions from any configured lists
 func (a ActionConfig) BuildRegExps(regexps map[string]*regexp.Regexp) {
-	for expression, regex := range a.regex {
-		regexps[expression] = regex
-	}
+	maps.Copy(regexps, a.regex)
 
 	for domain, loader := range a.regexLists {
 		file, err := loader.Load(domain)
