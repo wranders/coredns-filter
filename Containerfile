@@ -15,14 +15,14 @@ RUN { \
       GO_VERSION=$(curl -s 'https://go.dev/VERSION?m=text' | sed -ne 's/^go//p'); \
       GO_ARCH=$BUILDARCH; \
       if [[ "$BUILDARCH" == "arm" ]]; then GO_ARCH="arm64"; fi; \
-      curl -# -L https://go.dev/dl/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz | \
+      curl -# -L --proto "=https" --tlsv1.2 "https://go.dev/dl/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz" | \
         tar -C /usr/local -zx; \
     }
 ENV PATH=/usr/local/go/bin:$PATH
 
 ARG COREDNS_VERSION
 RUN mkdir /coredns && \
-    curl -# -L https://github.com/coredns/coredns/archive/refs/tags/v${COREDNS_VERSION}.tar.gz \
+    curl -# -L --proto "=https" --tlsv1.2 "https://github.com/coredns/coredns/archive/refs/tags/v${COREDNS_VERSION}.tar.gz" \
     | tar -C /coredns -zx --strip-components=1
 
 WORKDIR /coredns/
